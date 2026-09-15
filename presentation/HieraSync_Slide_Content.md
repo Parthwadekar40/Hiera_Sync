@@ -149,3 +149,40 @@ I already generated all *required* diagrams/charts natively. Use these prompts o
 3. **AI analytics concept:** "Flat dashboard illustration with abstract charts, gauges and a graduation cap motif, navy/indigo/cyan palette, modern SaaS style, clean, no readable text"
 
 > Tip: keep the title slide as-is (clean + formal scores better in reviews than busy AI art). If you add an image, put it only on slide 1's right card or slide 25's background at 15% transparency.
+
+---
+
+## 6. Appendix slides 26–30 (backup for Q&A) + formulae
+
+Present slides 1–25 in your slot; keep 26–30 ready — say *"I have backup slides"* when a reviewer probes deeper.
+
+- **S26 Appendix A — Sequence diagram** (approval flow): Faculty Browser → FastAPI → Firestore → HOD/Principal app, 10 numbered messages, JWT + role-check note.
+- **S27 Appendix B — Task lifecycle & risk formula**: TODO → IN_PROGRESS → IN_REVIEW → COMPLETED (+ OVERDUE branch) and the exact `calculate_task_risk()` formula (below).
+- **S28 Appendix C — Testing table** T1–T9 with Pass/Partial status; method footnote (/docs + per-role walkthroughs).
+- **S29 Appendix D — Feature matrix**: HieraSync vs Manual vs College ERP vs Asana-class 2026 (✔/◐/✖).
+- **S30 Appendix E — Gantt** (Jul–Dec 2026, Review-I marker) + target deployment strip.
+
+### Risk formula (exactly as implemented in `backend/app/api/v1/tasks.py`)
+
+```
+status in {Completed, Awaiting Approval}  →  R = 0, level LOW
+otherwise:  R = clamp(D + G + P + W, 5, 95)
+
+D (deadline) = 90 if overdue; 50 if ≤2 days left; 30 if ≤5 days; else 0
+G (gap)      = 25 if progress < 50% AND ≤3 days left; else 0
+P (priority) = 15 if priority = High; else 0
+W (workload) = 20 if assignee has >3 active tasks; else 0
+
+HIGH if R > 70 · MEDIUM if R > 40 · LOW otherwise
++ human-readable factor strings (shown as badges in the UI)
+```
+
+Worked example (on slide): 2 days left, 30% done, High priority, load 5 → 50+25+15+20 = 110 → capped **95 → HIGH**.
+
+### ⚠️ Before seminar day: actually run test cases T1–T9
+The table claims Pass — earn it: log in as each role, assign/approve/score one real task, trigger the scheduler path once, try the export. If T9 (export) or anything fails, change its cell to ◐/✖ in `build_ppt.py` and rebuild — reviewers respect honesty + a fix plan more than a fake Pass.
+
+### Deliberately NOT added (say this if asked)
+- **Screenshots**: only you can take them (needs your Firebase + login) — add 1 "Live Screens" slide after S19.
+- **DFD Level 2 / full class diagram**: correct but overkill for 15 minutes — offer to draw on the board if asked.
+- **Measured performance numbers**: no load tests run yet — the efficiency chart stays labelled *estimated* until the Oct pilot.

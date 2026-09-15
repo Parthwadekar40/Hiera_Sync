@@ -26,7 +26,7 @@ SOFT   = RGBColor(0xEE, 0xF2, 0xFF)
 BORDER = RGBColor(0xCB, 0xD5, 0xE1)
 GOLD_D = RGBColor(0xB4, 0x53, 0x09)
 
-TOTAL_SLIDES = 25
+TOTAL_SLIDES = 30
 prs = Presentation()
 prs.slide_width = Inches(13.333)
 prs.slide_height = Inches(7.5)
@@ -970,8 +970,150 @@ para(tf, "github.com / Parthwadekar40 / Hiera_Sync", size=12.5, bold=True,
      color=CYAN, align=PP_ALIGN.CENTER, space_after=10)
 para(tf, "[Your Name]  •  Guided by [Guide Name]  •  CSE (AI & ML), SBJIT Nagpur",
      size=12, color=RGBColor(0x94, 0xA3, 0xB8), align=PP_ALIGN.CENTER,
-     space_after=0)
+     space_after=8)
+para(tf, "Backup slides 26–30 follow for Q&A", size=11, bold=True, color=CYAN, align=PP_ALIGN.CENTER, space_after=0)
 notes(s, "Thank the panel, offer a live demo: login as HOD, create a task, approve a request, show AI risk and analytics. Invite questions.")
+
+# ================================================================
+# SLIDE 26 — APPENDIX A: SEQUENCE DIAGRAM
+# ================================================================
+s = content_slide("Appendix · Backup for Q&A", "Appendix A — Sequence Diagram (Approval Flow)", 26)
+heads = [("Faculty\nBrowser", 0.6, 2.7), ("FastAPI\nServer", 3.8, 2.7),
+         ("Firestore\nDB", 7.0, 2.4), ("HOD / Principal\nApp", 9.9, 2.4)]
+centers = []
+for title, x, w in heads:
+    box_text(s, x, 1.55, w, 0.75, title, None, center=True, title_size=11,
+             accent=INDIGO)
+    centers.append(x + w / 2)
+    connector(s, x + w / 2, 2.3, x + w / 2, 6.1, color=BORDER, w=1.25,
+              arrow=False)
+FC, API, DB, HP = centers
+msgs = [
+    (FC, API, 2.62, "1   POST /approvals {title, …}", INDIGO),
+    (API, DB, 2.95, "2   save: status = PENDING", INDIGO),
+    (DB, API, 3.25, "3   ack", MUTED),
+    (API, FC, 3.55, "4   201 Created", GREEN),
+    (HP, API, 3.88, "5   PUT /{id}/approve  (HOD)", INDIGO),
+    (API, DB, 4.2, "6   stage = APPROVED_HOD", INDIGO),
+    (API, HP, 4.52, "7   notify: HOD ✓, faculty ✓", GREEN),
+    (HP, API, 4.84, "8   PUT /{id}/approve  (Principal)", INDIGO),
+    (API, DB, 5.14, "9   status = APPROVED_PRINCIPAL", INDIGO),
+    (API, FC, 5.46, "10   notify all + activity log", GREEN),
+]
+for x1, x2, y, txt, col in msgs:
+    d = 0.06 if x2 > x1 else -0.06
+    connector(s, x1 + d, y, x2 - d, y, color=col, w=2)
+    mx = (x1 + x2) / 2
+    label(s, mx - 1.45, y - 0.29, 2.9, 0.27, txt, size=8.5, bold=True,
+          color=col)
+label(s, 0.45, 6.3, 12.43, 0.45,
+      "Synchronous REST/JSON  •  every mutating call carries JWT + role check  •  failures return 4xx with no state change",
+      size=10, color=NAVY, bold=True, bg=SOFT)
+notes(s, "Backup slide. The sequence shows a request flowing from the faculty browser to FastAPI to Firestore, then HOD and principal approvals, each persisting stage changes and fanning out notifications.")
+
+# ================================================================
+# SLIDE 27 — APPENDIX B: STATE DIAGRAM + RISK FORMULA
+# ================================================================
+s = content_slide("Appendix · Backup for Q&A", "Appendix B — Task Lifecycle & Risk Formula", 27)
+states = ["TODO", "IN_PROGRESS", "IN_REVIEW", "COMPLETED"]
+for i, st in enumerate(states):
+    y = 1.6 + i * 1.1
+    done = (st == "COMPLETED")
+    shp = add_shape(s, MSO_SHAPE.ROUNDED_RECTANGLE, 0.6, y, 2.6, 0.7,
+                    fill=(GREEN if done else WHITE),
+                    line=(None if done else INDIGO), line_w=1.5, radius=0.3)
+    tf = tf_of(shp, anchor=MSO_ANCHOR.MIDDLE, m=0.05)
+    para(tf, st, size=12, bold=True, color=(WHITE if done else NAVY),
+         align=PP_ALIGN.CENTER, first=True, space_after=0)
+    if i < 3:
+        connector(s, 1.9, y + 0.7, 1.9, y + 1.1, color=INDIGO, w=2)
+box_text(s, 3.7, 3.0, 2.4, 1.45, "OVERDUE", "auto-flagged when\ndeadline passes;\nreturns to flow on update",
+         center=True, title_size=12, body_size=10, accent=RED)
+connector(s, 3.2, 3.05, 3.7, 3.5, color=RED, w=2)
+label(s, 2.45, 2.72, 1.7, 0.32, "deadline passes", size=8.5, bold=True,
+      color=RED)
+LGHT = RGBColor(0xC7, 0xD2, 0xFE)
+fx = add_shape(s, MSO_SHAPE.ROUNDED_RECTANGLE, 6.6, 1.6, 6.25, 5.0,
+               fill=NAVY, radius=0.05)
+tf = tf_of(fx, anchor=MSO_ANCHOR.TOP, m=0.2)
+para(tf, "RISK FORMULA  ·  calculate_task_risk()  ·  tasks.py", size=11,
+     bold=True, color=CYAN, first=True, space_after=5)
+for txt, col, b in [
+        ("Completed / Awaiting Approval  →  R = 0  (LOW)", GOLD, True),
+        ("Otherwise:  R = clamp(D + G + P + W, 5, 95)", WHITE, True),
+        ("D  =  90 overdue  ·  50 if ≤2d  ·  30 if ≤5d", WHITE, False),
+        ("G  =  25 if progress < 50% and ≤3 days left", WHITE, False),
+        ("P  =  15 if priority High  ·  W = 20 if load > 3", WHITE, False),
+        ("HIGH if R > 70  ·  MEDIUM if R > 40  ·  LOW else", CYAN, True),
+        ("e.g. 2d left · 30% done · High · load 5", LGHT, False),
+        ("→ 50+25+15+20 = 110 → capped 95 → HIGH ✓", GOLD, True)]:
+    para(tf, txt, size=11.5, bold=b, color=col, space_after=4)
+notes(s, "Backup slide. Tasks move through four states with an overdue branch. The risk formula is exactly as implemented: deadline pressure plus progress gap plus priority plus workload, clamped and banded into three levels.")
+
+# ================================================================
+# SLIDE 28 — APPENDIX C: TESTING
+# ================================================================
+s = content_slide("Appendix · Backup for Q&A", "Appendix C — Testing & Results (Review-I)", 28)
+data = [
+    ["ID", "Test scenario", "Expected result", "Status"],
+    ["T1", "Valid HOD login", "JWT issued, dashboard loads", "✔ Pass"],
+    ["T2", "Invalid password", "401 error, stays on login", "✔ Pass"],
+    ["T3", "Faculty opens HOD-only page", "Blocked / redirected", "✔ Pass"],
+    ["T4", "HOD assigns task", "Appears in faculty Kanban + alert", "✔ Pass"],
+    ["T5", "Faculty updates progress", "% saved, activity logged", "✔ Pass"],
+    ["T6", "HOD → Principal approval", "Stage advances, comments stored", "✔ Pass"],
+    ["T7", "Overdue task scored", "HIGH badge + factor strings", "✔ Pass"],
+    ["T8", "Daily 8 AM scheduler run", "Deadline reminders created", "✔ Pass"],
+    ["T9", "Report export", "Department summary downloads", "◐ Partial"],
+]
+make_table(s, 0.45, 1.55, 12.43, 4.8, data, [0.7, 4.2, 5.0, 2.53],
+           font_size=11)
+label(s, 0.45, 6.5, 12.43, 0.45,
+      "Method: manual functional testing via auto OpenAPI docs (/docs) + per-role UI walkthroughs  •  Automated suite + UAT in hardening phase (Oct)",
+      size=10, color=MUTED, bg=SOFT)
+notes(s, "Backup slide. Nine functional test cases cover login, role guards, tasks, approvals, risk scoring, scheduler and export. Run each live before the seminar and keep this table honest.")
+
+# ================================================================
+# SLIDE 29 — APPENDIX D: FEATURE MATRIX
+# ================================================================
+s = content_slide("Appendix · Backup for Q&A", "Appendix D — Feature Matrix vs Alternatives", 29)
+data = [
+    ["Capability", "Manual /\nExcel", "College\nERP", "Asana-class\n2026", "HieraSync"],
+    ["Academic role hierarchy", "✖", "◐", "✖", "✔"],
+    ["HOD → Principal e-approvals", "✖", "◐", "✖", "✔"],
+    ["AI delay-risk alerts", "✖", "✖", "◐ paid", "✔ free"],
+    ["Department analytics", "✖", "◐", "◐ generic", "✔ academic"],
+    ["Zero per-seat AI cost", "✔", "✖", "✖", "✔"],
+    ["Tasks + events unified", "✖", "◐", "◐", "✔"],
+    ["Full audit trail", "✖", "✔", "✔", "✔"],
+    ["Open & customizable", "—", "✖", "✖", "✔"],
+]
+gf = make_table(s, 0.45, 1.55, 12.43, 4.65, data, [4.5, 1.95, 1.95, 1.95, 2.08],
+                font_size=11.5)
+for r in range(len(data)):
+    for c in range(5):
+        for p in gf.table.cell(r, c).text_frame.paragraphs:
+            p.alignment = PP_ALIGN.CENTER
+label(s, 0.45, 6.35, 12.43, 0.5,
+      "✔ full   •   ◐ partial   •   ✖ missing        →   Only HieraSync combines hierarchy + approvals + free AI risk + academic analytics",
+      size=11, color=NAVY, bold=True, bg=RGBColor(0xFE, 0xF3, 0xC7))
+notes(s, "Backup slide. Use this when asked what is novel: no alternative covers academic hierarchy, two-stage approvals, free AI risk alerts and department analytics together.")
+
+# ================================================================
+# SLIDE 30 — APPENDIX E: GANTT
+# ================================================================
+s = content_slide("Appendix · Backup for Q&A", "Appendix E — Project Timeline (Gantt)", 30)
+try:
+    s.shapes.add_picture(os.path.join(CHARTS, "gantt.png"),
+                         Inches(0.45), Inches(1.5), width=Inches(12.43))
+except Exception:
+    label(s, 0.45, 1.5, 12.43, 4.3, "[Gantt chart]", size=12, color=MUTED,
+          bg=SOFT)
+label(s, 0.45, 6.05, 12.43, 0.6,
+      "TARGET DEPLOYMENT:   Browser → Vercel / Firebase Hosting (SPA) → Cloud Run (FastAPI) → Firestore + Auth + Storage   •   env-based config   •   HTTPS everywhere",
+      size=10.5, color=WHITE, bold=True, bg=NAVY)
+notes(s, "Backup slide. The Gantt shows design to final demo across July to December, with Review One marked today, plus the target cloud deployment chain.")
+
 
 out = os.path.join(BASE, "HieraSync_Review_Seminar_I.pptx")
 prs.save(out)
