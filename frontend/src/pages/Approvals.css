@@ -596,7 +596,7 @@
   margin: 0;
   font-size: 0.86rem;
   line-height: 1.5;
-  color: var(--hs-ink-soft, #525252);
+  color: var(--color-ink-soft);
 }
 
 .approvals-ai-chips {
@@ -623,7 +623,7 @@
 }
 
 .approvals-ai-chip:hover {
-  border-color: var(--color-brand-plum, #6d28d9);
+  border-color: var(--color-brand-plum);
   box-shadow: var(--hs-shadow-sm);
   transform: translateY(-1px);
 }
@@ -635,7 +635,7 @@
   height: 18px;
   border-radius: 50%;
   background: #f0e9ff;
-  color: var(--color-brand-plum, #6d28d9);
+  color: var(--color-brand-plum);
   font-size: 0.68rem;
 }
 
