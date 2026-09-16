@@ -184,6 +184,11 @@ python scripts/seed_demo.py --password Hiera@2026     # optional: a full departm
 The calendar page can also be driven end to end without a Firebase project: register a HOD account,
 then create, drag, filter and export activities; the data simply does not survive a restart.
 
+`FIREBASE_PRIVATE_KEY_PATH` may stay relative — it is resolved against the CWD first and then
+against `backend/`, so a service-account file placed in `backend/` is found even if uvicorn is
+started from the repository root (the module itself still has to be imported from `backend/`:
+`python -m uvicorn app.main:app` from the root fails with *No module named 'app'*).
+
 Interactive API docs: <http://127.0.0.1:8000/docs>. Without credentials the service still boots:
 `app/database/memory.py` supplies a volatile Firestore double so registration, the calendar and the
 approvals queue all work — check `GET /health`, which answers

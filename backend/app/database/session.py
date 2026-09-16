@@ -34,18 +34,21 @@ def init_firebase():
         using_memory_db = False
         return
 
-    try:
-        if os.path.exists(settings.FIREBASE_PRIVATE_KEY_PATH):
-            logger.info(
-                f"Initializing Firebase using {settings.FIREBASE_PRIVATE_KEY_PATH}"
-            )
+    key_path = settings.credentials_path()
 
-            cred = credentials.Certificate(settings.FIREBASE_PRIVATE_KEY_PATH)
+    try:
+        if key_path and os.path.exists(key_path):
+            logger.info(f"Initializing Firebase using {key_path}")
+
+            cred = credentials.Certificate(key_path)
 
             firebase_admin.initialize_app(cred, {"projectId": settings.FIREBASE_PROJECT_ID})
         else:
             logger.warning(
-                "Firebase credentials file not found. Using default credentials."
+                "No service-account file at "
+                f"{key_path or settings.FIREBASE_PRIVATE_KEY_PATH!r} — trying Application "
+                "Default Credentials. Put firebase-credentials.json in backend/ (or set "
+                "FIREBASE_PRIVATE_KEY_PATH) to persist data."
             )
 
             firebase_admin.initialize_app(
