@@ -56,6 +56,8 @@ npm run dev                                               # terminal 2
 git clone https://github.com/Parthwadekar40/Hiera_Sync.git
 cd Hiera_Sync/backend
 python3 -m venv .venv && source .venv/bin/activate
+# If venv creation fails on Debian/Ubuntu ("ensurepip is not available"):
+#   sudo apt install python3-venv   # then re-run the line above
 pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --port 8000       # terminal 1
 ```
