@@ -79,5 +79,7 @@ async def health():
         "database": "firestore"
         if getattr(app.state, "FIREBASE_AVAILABLE", False)
         else "memory (volatile demo data)",
-        "project": getattr(database_session, "resolved_project_id", None),
+        "project": getattr(database_session, "resolved_project_id", None)
+        if getattr(app.state, "FIREBASE_AVAILABLE", False)
+        else None,
     }
