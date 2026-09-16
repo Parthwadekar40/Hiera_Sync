@@ -132,7 +132,7 @@ export default function Dashboard() {
     "2 Tasks may miss deadline. AI recommends reviewing project approvals first.";
 
   return (
-    <div className="admin-dashboard">
+    <div className="admin-dashboard hs-page">
 
       {/* =====================================================
           HERO (BRIGHT, GLOSSY, SOPHISTICATED NEUTRAL/PLUM)

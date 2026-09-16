@@ -95,7 +95,7 @@ export default function HODDashboard() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500">Loading HOD Dashboard...</div>;
+  if (loading) return <div className="hs-page text-center text-slate-500">Loading HOD Dashboard...</div>;
 
   const totalTasks = tasks.length;
   const pendingCount = tasks.filter(t => t.status === "Pending").length;
@@ -110,7 +110,7 @@ export default function HODDashboard() {
   });
 
   return (
-    <div className="p-8 font-sans bg-slate-50 min-h-screen">
+    <div className="hs-page font-sans">
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">Department Task Management</h1>

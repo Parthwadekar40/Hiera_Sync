@@ -67,7 +67,7 @@ export default function TeacherDashboard() {
   const overdueCount = tasks.filter(t => t.risk_level === "HIGH" && t.status !== "Completed" && t.status !== "Awaiting Approval").length;
 
   return (
-    <div className="p-8 font-sans">
+    <div className="hs-page font-sans">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-800">Welcome, {user?.name.split(' ')[0]} 👋</h1>
         <p className="text-slate-500 mt-1">Here are your assigned tasks and priorities.</p>

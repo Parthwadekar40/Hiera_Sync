@@ -5,13 +5,14 @@ from app.scheduler.jobs import start_scheduler, stop_scheduler
 from app.utils.logging import logger
 from app.database.session import init_firebase
 from fastapi.responses import JSONResponse
+from app.config.settings import settings
 import sys
 from contextlib import asynccontextmanager
 from google.api_core.exceptions import GoogleAPICallError, RetryError
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting CampusPulse API...")
+    logger.info("Starting HieraSync API...")
     init_firebase()
     start_scheduler()
     yield
@@ -19,16 +20,18 @@ async def lifespan(app: FastAPI):
     logger.info("CampusPulse API shutdown complete.")
 
 app = FastAPI(
-    title="CampusPulse API",
-    description="Smart College Workflow & Event Management System API",
+    title="HiéraSync AI API",
+    description="SBJIT Nagpur — academic workflow, calendar & approvals API",
     version="1.0.0",
     lifespan=lifespan
 )
 
 # CORS middleware
+# Origins come from settings (CORS_ORIGINS in .env) - a wildcard combined with
+# allow_credentials is rejected by browsers and is unsafe for production.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Update for production
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,4 +57,4 @@ async def google_retry_exception_handler(request: Request, exc: RetryError):
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to CampusPulse API"}
+    return {"message": "HiéraSync AI API is running", "docs": "/docs"}

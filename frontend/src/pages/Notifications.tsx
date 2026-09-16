@@ -209,7 +209,7 @@ export default function Notifications() {
   }, [notifications, statusFilter, typeFilter, priorityFilter, searchQuery, sortBy]);
 
   return (
-    <div className="nc-page">
+    <div className="nc-page hs-page">
 
       {/* =====================================================
           1. TOP HEADER

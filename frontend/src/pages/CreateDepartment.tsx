@@ -27,15 +27,15 @@ export default function CreateDepartment() {
 
   if (user?.department_id) {
     return (
-      <div className="p-8 text-center mt-20">
+      <div className="hs-page py-16 text-center">
         <h1 className="text-2xl font-bold">You already manage a department.</h1>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto mt-10">
-      <div className="bg-white rounded-3xl shadow-lg p-8">
+    <div className="hs-page hs-page--narrow">
+      <div className="hs-card p-8 shadow-lg">
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600">
             <Building2 size={32} />

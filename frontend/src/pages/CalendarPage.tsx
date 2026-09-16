@@ -4,7 +4,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
-import { aiApi, employeesApi, eventsApi, notificationsApi } from "../api";
+import { aiApi, employeesApi, eventsApi } from "../api";
 import { useAuth } from "../contexts/AuthContext";
 import type {
   ActivityPriority,
@@ -112,6 +112,7 @@ export default function CalendarPage() {
 
   const [aiInsight, setAiInsight] = useState({
     text: "Reading the department calendar…",
+    highlights: [] as string[],
     fallback: false,
     loading: true,
   });
@@ -386,13 +387,18 @@ export default function CalendarPage() {
         const insight = await aiApi.getCalendarInsights();
         if (cancelled) return;
         if (insight?.message) {
-          setAiInsight({ text: insight.message, fallback: false, loading: false });
+          setAiInsight({
+            text: insight.message,
+            highlights: Array.isArray(insight.highlights) ? insight.highlights : [],
+            fallback: false,
+            loading: false,
+          });
           return;
         }
         throw new Error("empty insight");
       } catch {
         if (cancelled) return;
-        setAiInsight({ text: localInsight(), fallback: true, loading: false });
+        setAiInsight({ text: localInsight(), highlights: [], fallback: true, loading: false });
       }
     };
 
@@ -520,25 +526,8 @@ export default function CalendarPage() {
         });
 
         pushToast(`“${created.title}” added on ${formatDate(created.date)}.`, "success");
-
         if (form.notify && source === "live" && created.person) {
-          try {
-            await notificationsApi.create({
-              title: `New activity: ${created.title}`,
-              message: `${formatDate(created.date)} (${weekdayShort(created.date)})${
-                created.all_day === false && created.start_time
-                  ? ` at ${created.start_time}`
-                  : ""
-              } · ${created.location || "Venue to be confirmed"}`,
-              type: "Event",
-              priority: created.priority ?? "Medium",
-              icon: typeIcons[created.type as ActivityType] ?? "📅",
-              target_route: "/calendar",
-            });
-            pushToast(`Reminder queued for ${created.person}.`, "success");
-          } catch {
-            pushToast("Activity created, but the reminder could not be queued.", "info");
-          }
+          pushToast(`Reminder queued for ${created.person}.`, "success");
         }
       } else if (editingId) {
         const updated =
@@ -1330,6 +1319,14 @@ export default function CalendarPage() {
             <p className={aiInsight.fallback ? "is-fallback" : ""}>
               {aiInsight.loading ? "Reading the department calendar…" : aiInsight.text}
             </p>
+
+            {aiInsight.highlights.length > 0 && (
+              <ul className="ai-highlights">
+                {aiInsight.highlights.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            )}
 
             <small>
               {aiInsight.fallback

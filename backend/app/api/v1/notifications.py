@@ -115,7 +115,7 @@ def create_notification(
     notif_id = f"notif_{uuid.uuid4().hex[:8]}"
     db_notif = notification.dict()
     db_notif["id"] = notif_id
-    db_notif["user_id"] = current_user.id
+    db_notif["user_id"] = notification.user_id or current_user.id
     db_notif["created_at"] = datetime.utcnow().isoformat()
     if not db_notif.get("time"):
         db_notif["time"] = "Just now"

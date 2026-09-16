@@ -5,7 +5,12 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
+const explicitBaseUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, '');
+
+// In development the Vite dev server proxies /api/v1 to FastAPI, so the app can
+// stay same-origin (no CORS, works behind tunnels and sandbox preview hosts).
+const API_BASE_URL =
+  explicitBaseUrl || (import.meta.env.DEV ? '/api/v1' : 'http://127.0.0.1:8000/api/v1');
 
 export const getAuthToken = () => {
   return localStorage.getItem('access_token') || sessionStorage.getItem('access_token');

@@ -86,7 +86,7 @@ export default function AIAssistantPage() {
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans">
+    <div className="hs-page space-y-6 font-sans">
 
       {/* HEADER BANNER */}
       <div className="bg-gradient-to-r from-[#1E1B4B] via-[#312E81] to-[#4338CA] rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">

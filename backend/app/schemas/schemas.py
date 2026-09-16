@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from typing import Dict, List, Optional
 from datetime import datetime
 from app.models.models import RoleEnum, PriorityEnum, TaskStatusEnum
 
@@ -89,6 +89,13 @@ class DepartmentReportSummary(BaseModel):
     completion_rate: str = "66%"
 
 # Event Schemas
+ACTIVITY_TYPES = {
+    "Academic", "Meeting", "Workshop", "Department Activity", "Research"
+}
+ACTIVITY_STATUSES = {"Planned", "Assigned", "Review", "Completed"}
+ACTIVITY_PRIORITIES = {"Low", "Medium", "High"}
+
+
 class EventCreate(BaseModel):
     title: str
     date: str
@@ -96,6 +103,42 @@ class EventCreate(BaseModel):
     person: str
     description: Optional[str] = None
     location: Optional[str] = None
+    status: str = "Planned"
+    priority: str = "Medium"
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    all_day: bool = True
+    notify_assignee: bool = False
+
+    @field_validator("date")
+    @classmethod
+    def _normalise_date(cls, value: str) -> str:
+        from app.utils.dates import to_iso_date
+
+        return to_iso_date(value)
+
+    @field_validator("type")
+    @classmethod
+    def _valid_type(cls, value: str) -> str:
+        return value if value in ACTIVITY_TYPES else "Academic"
+
+    @field_validator("status")
+    @classmethod
+    def _valid_status(cls, value: str) -> str:
+        return value if value in ACTIVITY_STATUSES else "Planned"
+
+    @field_validator("priority")
+    @classmethod
+    def _valid_priority(cls, value: str) -> str:
+        return value if value in ACTIVITY_PRIORITIES else "Medium"
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def _valid_time(cls, value: Optional[str]) -> Optional[str]:
+        from app.utils.dates import clean_time
+
+        return clean_time(value)
+
 
 class EventUpdate(BaseModel):
     title: Optional[str] = None
@@ -104,6 +147,26 @@ class EventUpdate(BaseModel):
     person: Optional[str] = None
     description: Optional[str] = None
     location: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    all_day: Optional[bool] = None
+
+    @field_validator("date")
+    @classmethod
+    def _normalise_date(cls, value: Optional[str]) -> Optional[str]:
+        from app.utils.dates import to_iso_date
+
+        return to_iso_date(value) if value else None
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def _valid_time(cls, value: Optional[str]) -> Optional[str]:
+        from app.utils.dates import clean_time
+
+        return clean_time(value)
+
 
 class EventResponse(EventCreate):
     id: str
@@ -295,6 +358,7 @@ class ApprovalResponse(ApprovalCreate):
 
 # Notification Schemas
 class NotificationCreate(BaseModel):
+    user_id: Optional[str] = None
     title: str
     message: str
     type: str = "Task"
@@ -316,6 +380,33 @@ class UnreadCountResponse(BaseModel):
     unread_count: int
 
 # AI Schemas
+class AINotificationSummaryResponse(BaseModel):
+    summary: str
+    message: str = ""
+    total: int = 0
+    unread: int = 0
+    by_type: Dict[str, int] = {}
+    attention: List[str] = []
+
+
+class AIApprovalSuggestionItem(BaseModel):
+    id: str
+    title: str
+    score: int
+    reason: str
+
+
+class AIApprovalSuggestionsResponse(BaseModel):
+    message: str
+    suggestions: List[AIApprovalSuggestionItem] = []
+
+
+class AICalendarInsightResponse(BaseModel):
+    message: str
+    highlights: List[str] = []
+    source: str = "heuristic"
+
+
 class AIChatRequest(BaseModel):
     message: str
 

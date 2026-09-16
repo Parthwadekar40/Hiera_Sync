@@ -5,7 +5,7 @@
 ===================================================== */
 
 :root {
-  --hs-jd-bg: #F5F3EF;
+  --hs-jd-bg: #f7f7f5;
   --hs-jd-surface: #FFFFFF;
   --hs-jd-surface-glass: rgba(255, 255, 255, 0.90);
 
@@ -38,9 +38,9 @@
   --hs-jd-shadow-btn: 0 10px 25px rgba(109, 40, 217, 0.25);
   --hs-jd-shadow-btn-hover: 0 14px 32px rgba(109, 40, 217, 0.35);
 
-  --hs-jd-radius-card: 24px;
-  --hs-jd-radius-md: 14px;
-  --hs-jd-radius-pill: 9999px;
+  --hs-jd-radius-card: var(--radius-card);
+  --hs-jd-radius-md: var(--radius-md);
+  --hs-jd-radius-pill: var(--radius-pill);
 }
 
 /* =====================================================
@@ -48,14 +48,15 @@
 ===================================================== */
 
 .jd-page {
-  min-height: 100vh;
+  /* the app shell already reserves 80px for the top bar */
+  min-height: calc(100vh - 5rem);
   width: 100%;
   background-color: var(--hs-jd-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 32px var(--hs-gutter) 40px;
+  font-family: var(--font-sans);
   letter-spacing: -0.01em;
   box-sizing: border-box;
   position: relative;
@@ -118,7 +119,7 @@
   width: 64px;
   height: 64px;
   margin: 0 auto 20px;
-  border-radius: 18px;
+  border-radius: var(--radius-card);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,7 +240,7 @@
 .jd-btn-primary {
   width: 100%;
   min-height: 54px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--hs-jd-plum-hover);
   background: linear-gradient(135deg, var(--hs-jd-navy) 0%, var(--hs-jd-plum) 100%);
   color: #FFFFFF;
@@ -284,7 +285,7 @@
 .jd-btn-secondary {
   width: 100%;
   min-height: 44px;
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--hs-jd-border);
   background: var(--hs-jd-surface);
   color: var(--hs-jd-navy);
@@ -335,7 +336,7 @@
 .jd-code-input {
   width: 100%;
   height: 56px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 2px solid #D6D3D1;
   background: #FAFAF9;
   color: var(--hs-jd-navy);
@@ -357,7 +358,7 @@
 
 .jd-error-banner {
   padding: 12px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: #FFF1F2;
   border: 1px solid var(--hs-jd-rose-border);
   color: var(--hs-jd-rose);

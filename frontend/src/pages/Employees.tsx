@@ -84,7 +84,7 @@ export default function Employees() {
   );
 
   return (
-    <div className="p-8 bg-blue-50 min-h-screen space-y-8">
+    <div className="hs-page space-y-8">
       <div>
         <h1 className="text-4xl font-bold text-gray-800">
           Faculty Management

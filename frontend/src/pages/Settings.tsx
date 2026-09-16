@@ -51,11 +51,11 @@ export default function Settings() {
   };
 
   if (loading) {
-    return <div className="p-8 bg-blue-50 min-h-screen text-center py-10">Loading settings...</div>;
+    return <div className="hs-page py-16 text-center">Loading settings...</div>;
   }
 
   return (
-    <div className="p-8 bg-blue-50 min-h-screen">
+    <div className="hs-page">
       <h1 className="text-4xl font-bold text-gray-800">System Settings</h1>
       <p className="text-gray-500 mt-2 mb-8">Manage HieraSync AIML Department preferences</p>
 

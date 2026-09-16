@@ -49,7 +49,7 @@ export default function Goals() {
   if (loading) return <div>Loading goals...</div>;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="hs-page">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Department Goals & Milestones</h1>
         {isHod && (

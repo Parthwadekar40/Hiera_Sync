@@ -67,7 +67,7 @@ export default function TaskRequests() {
   if (loading) return <div>Loading requests...</div>;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="hs-page">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">{isHod ? "Incoming Task Requests" : "My Task Requests"}</h1>
         {!isHod && (

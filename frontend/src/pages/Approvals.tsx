@@ -1,1112 +1,701 @@
-import { useEffect, useMemo, useState } from "react";
-import { eventsApi, aiApi, employeesApi } from "../api";
-import { EventResponse, EmployeeResponse } from "../types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { aiApi, approvalsApi } from "../api";
+import { useAuth } from "../contexts/AuthContext";
+import type { ApprovalCreate, ApprovalResponse } from "../types";
+import { formatDate, toISODate } from "../utils/calendar";
+import "./Approvals.css";
 
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
+type Decision = "Pending" | "Approved" | "Rejected";
 
-import "./CalendarPage.css";
-
-type UserRole = "ADMIN" | "HOD" | "EMPLOYEE";
-
-type WorkflowStatus =
-  | "Planned"
-  | "Assigned"
-  | "In Progress"
-  | "Review"
-  | "Completed";
-
-type ActivityType =
-  | "Academic"
-  | "Meeting"
-  | "Workshop"
-  | "Department Activity"
-  | "Research";
-
-interface CalendarEventData extends EventResponse {
-  status?: WorkflowStatus;
-  priority?: "Low" | "Medium" | "High";
-  startTime?: string;
-  endTime?: string;
-  description?: string;
-  assignedTo?: string;
-  assignedBy?: string;
+interface Toast {
+  id: number;
+  tone: "success" | "error" | "info";
+  text: string;
 }
 
-export default function CalendarPage() {
-  const [events, setEvents] = useState<CalendarEventData[]>([]);
-  const [facultyList, setFacultyList] = useState<EmployeeResponse[]>([]);
+const STATUS_TONE: Record<Decision, string> = {
+  Pending: "is-pending",
+  Approved: "is-approved",
+  Rejected: "is-rejected",
+};
 
+const PRIORITY_TONE: Record<string, string> = {
+  High: "prio-high",
+  Medium: "prio-medium",
+  Low: "prio-low",
+};
+
+const SEED: ApprovalResponse[] = [
+  {
+    id: "app_1",
+    title: "Final Year Project Review Panel",
+    requested: "AIML Final Year Students",
+    assigned: "Dr. Animesh Tayal",
+    priority: "High",
+    status: "Pending",
+    comments: "External reviewer confirmed for the panel.",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "app_2",
+    title: "AI Lab Equipment Request",
+    requested: "AI Lab Coordinator",
+    assigned: "Mrs. Neha Gurnani",
+    priority: "Medium",
+    status: "Pending",
+    comments: "Six workstation GPUs for the fine-tuning lab.",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "app_3",
+    title: "Machine Learning Workshop Budget",
+    requested: "AIML Student Club",
+    assigned: "Ms. Sweta Arun Bokade",
+    priority: "Low",
+    status: "Approved",
+    reviewed_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "app_4",
+    title: "Research Paper Submission — IEEE Conference",
+    requested: "Student Research Team",
+    assigned: "Dr. Bhushan Mahendra Manjre",
+    priority: "High",
+    status: "Pending",
+    comments: "Camera-ready deadline in 9 days.",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "app_5",
+    title: "Industry Visit — Nagpur AI Park",
+    requested: "TYAIML Class Representative",
+    assigned: "Mrs. Neha Gurnani",
+    priority: "Medium",
+    status: "Rejected",
+    comments: "Same week as mid-semester assessments.",
+    reviewed_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  },
+];
+
+const asDecision = (value?: string): Decision =>
+  value === "Approved" || value === "Rejected" ? value : "Pending";
+
+type AdviceSuggestion = { id: string; title: string; reason: string };
+type Advice = { message: string; suggestions: AdviceSuggestion[] };
+
+export default function Approvals() {
+  const { user } = useAuth();
+  const role = (user?.role ?? "").toUpperCase();
+  const canReview = role.includes("ADMIN") || role.includes("HOD") || role.includes("HEAD");
+
+  const [items, setItems] = useState<ApprovalResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState<"live" | "preview">("live");
   const [error, setError] = useState("");
 
+  const [tab, setTab] = useState<"All" | Decision>("Pending");
+  const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+
   const [showForm, setShowForm] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-
-  const [selectedEvent, setSelectedEvent] =
-    useState<CalendarEventData | null>(null);
-
-  const [, setSelectedDate] = useState("");
-
-  const [aiInsights, setAiInsights] = useState(
-    "AI is analyzing your academic calendar and upcoming department activities."
-  );
-
-  /*
-   * TEMPORARY ROLE
-   *
-   * Change this according to your actual logged-in user.
-   *
-   * ADMIN
-   * HOD
-   * EMPLOYEE
-   */
-  const userRole = "HOD" as UserRole;
-
-  const isAdmin = userRole === "ADMIN";
-  const isHOD = userRole === "HOD";
-  const isFaculty = userRole === "EMPLOYEE";
-
-  const [newEvent, setNewEvent] = useState({
+  const [form, setForm] = useState<ApprovalCreate>({
     title: "",
-    date: "",
-    type: "Academic" as ActivityType,
-    person: "",
-    startTime: "10:00",
-    endTime: "11:00",
-    priority: "Medium" as "Low" | "Medium" | "High",
-    description: "",
+    requested: user?.name ?? "",
+    assigned: "",
+    priority: "Medium",
+    comments: "",
   });
+  const [formError, setFormError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  /* ---------------- FETCH DATA ---------------- */
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [advice, setAdvice] = useState<Advice | null>(null);
+  const toastSeq = useRef(0);
 
-  useEffect(() => {
-    const loadCalendar = async () => {
-      try {
-        setLoading(true);
-
-        const [eventsData, facultyData] = await Promise.all([
-          eventsApi.getAll(),
-          employeesApi.getAll(),
-        ]);
-
-        setEvents(eventsData as CalendarEventData[]);
-        setFacultyList(facultyData);
-
-        try {
-          const insights = await aiApi.getCalendarInsights();
-
-          if (insights?.message) {
-            setAiInsights(insights.message);
-          }
-        } catch {
-          // AI is optional
-        }
-      } catch (err: any) {
-        setError(err?.message || "Failed to load calendar");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCalendar();
+  const pushToast = useCallback((text: string, tone: Toast["tone"] = "info") => {
+    const id = ++toastSeq.current;
+    setToasts((current) => [...current, { id, tone, text }]);
+    window.setTimeout(
+      () => setToasts((current) => current.filter((toast) => toast.id !== id)),
+      4200
+    );
   }, []);
 
-  /* ---------------- STATISTICS ---------------- */
-
-  const statistics = useMemo(() => {
+  const localAdvice = useCallback((list: ApprovalResponse[]): Advice => {
+    const pending = list.filter((item) => asDecision(item.status) === "Pending");
+    if (pending.length === 0) {
+      return { message: "Nothing is waiting for a decision right now.", suggestions: [] };
+    }
+    const weight = (value?: string) => (value === "High" ? 0 : value === "Medium" ? 1 : 2);
+    const ranked = [...pending]
+      .sort((a, b) => weight(a.priority) - weight(b.priority))
+      .slice(0, 3);
     return {
-      total: events.length,
-      academic: events.filter((e) => e.type === "Academic").length,
-      meetings: events.filter((e) => e.type === "Meeting").length,
-      workshops: events.filter((e) => e.type === "Workshop").length,
-      research: events.filter((e) => e.type === "Research").length,
-      pending: events.filter(
-        (e) =>
-          e.status === "Planned" ||
-          e.status === "Assigned" ||
-          !e.status
-      ).length,
+      message: `${pending.length} request(s) are waiting — start with “${ranked[0].title}” (${
+        ranked[0].priority || "Medium"
+      } priority).`,
+      suggestions: ranked.map((item) => ({
+        id: String(item.id),
+        title: item.title,
+        reason: `${item.priority || "Medium"} priority`,
+      })),
     };
-  }, [events]);
+  }, []);
 
-  /* ---------------- CALENDAR EVENTS ---------------- */
-
-  const calendarEvents = events.map((event) => ({
-    id: String(event.id),
-    title: event.title,
-    start: event.date,
-    allDay: true,
-
-    extendedProps: {
-      type: event.type,
-      person: event.person,
-      status: event.status || "Assigned",
-      priority: event.priority || "Medium",
-      description: event.description || "",
+  const refreshAdvice = useCallback(
+    async (list: ApprovalResponse[]) => {
+      try {
+        const res = await aiApi.getApprovalSuggestions();
+        if (res?.message) {
+          setAdvice({
+            message: res.message,
+            suggestions: (res.suggestions ?? []).map((item) => ({
+              id: String(item.id ?? ""),
+              title: item.title ?? "Request",
+              reason: item.reason ?? "",
+            })),
+          });
+          return;
+        }
+        throw new Error("empty response");
+      } catch {
+        setAdvice(localAdvice(list));
+      }
     },
-  }));
+    [localAdvice]
+  );
 
-  /* ---------------- CREATE EVENT ---------------- */
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await approvalsApi.getAll();
+      setItems(data ?? []);
+      setSource("live");
+      void refreshAdvice(data ?? []);
+    } catch (err: any) {
+      setItems(SEED);
+      setSource("preview");
+      setAdvice(localAdvice(SEED));
+      setError(err?.message || "Approval service is unreachable.");
+    } finally {
+      setLoading(false);
+    }
+  }, [localAdvice, refreshAdvice]);
 
-  const handleCreateEvent = async () => {
-    if (
-      !newEvent.title ||
-      !newEvent.date ||
-      !newEvent.person
-    ) {
-      alert("Please fill all required fields.");
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const stats = useMemo(() => {
+    const now = Date.now();
+    const age = (item: ApprovalResponse) => {
+      const created = item.created_at ? new Date(item.created_at).getTime() : now;
+      return Math.max(0, Math.round((now - created) / 86_400_000));
+    };
+    return {
+      pending: items.filter((item) => asDecision(item.status) === "Pending").length,
+      approved: items.filter((item) => asDecision(item.status) === "Approved").length,
+      rejected: items.filter((item) => asDecision(item.status) === "Rejected").length,
+      highPriority: items.filter(
+        (item) => asDecision(item.status) === "Pending" && item.priority === "High"
+      ).length,
+      stale: items.filter((item) => asDecision(item.status) === "Pending" && age(item) > 3).length,
+    };
+  }, [items]);
+
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return items
+      .filter((item) => (tab === "All" ? true : asDecision(item.status) === tab))
+      .filter((item) =>
+        needle
+          ? [item.title, item.requested, item.assigned, item.comments]
+              .join(" ")
+              .toLowerCase()
+              .includes(needle)
+          : true
+      )
+      .sort((a, b) => {
+        const rank = (value?: string) =>
+          value === "High" ? 0 : value === "Medium" ? 1 : 2;
+        return rank(a.priority) - rank(b.priority);
+      });
+  }, [items, query, tab]);
+
+  const decide = async (item: ApprovalResponse, decision: Exclude<Decision, "Pending">) => {
+    if (!canReview) {
+      pushToast("Only the HOD desk can take approval decisions.", "error");
       return;
     }
 
+    setBusyId(String(item.id));
     try {
-      const created = await eventsApi.create({
-        title: newEvent.title,
-        date: newEvent.date,
-        type: newEvent.type,
-        person: newEvent.person,
-      });
+      if (source === "live") {
+        const next =
+          decision === "Approved"
+            ? await approvalsApi.approve(String(item.id))
+            : await approvalsApi.reject(String(item.id));
 
-      const enhancedEvent: CalendarEventData = {
-        ...(created as CalendarEventData),
-        status: "Assigned",
-        priority: newEvent.priority,
-        startTime: newEvent.startTime,
-        endTime: newEvent.endTime,
-        description: newEvent.description,
-      };
+        if (note.trim()) {
+          await approvalsApi
+            .update(String(item.id), { comments: note.trim() })
+            .catch(() => undefined);
+          next.comments = note.trim();
+        }
 
-      setEvents((previous) => [...previous, enhancedEvent]);
+        setItems((previous) =>
+          previous.map((entry) => (String(entry.id) === String(item.id) ? { ...entry, ...next } : entry))
+        );
+      } else {
+        setItems((previous) =>
+          previous.map((entry) =>
+            String(entry.id) === String(item.id)
+              ? {
+                  ...entry,
+                  status: decision,
+                  comments: note.trim() || entry.comments,
+                  reviewed_at: new Date().toISOString(),
+                }
+              : entry
+          )
+        );
+      }
 
-      setShowForm(false);
-
-      setNewEvent({
-        title: "",
-        date: "",
-        type: "Academic",
-        person: "",
-        startTime: "10:00",
-        endTime: "11:00",
-        priority: "Medium",
-        description: "",
-      });
+      pushToast(`“${item.title}” marked ${decision.toLowerCase()}.`, "success");
+      setOpenId(null);
+      setNote("");
     } catch (err: any) {
-      alert(
-        "Failed to create activity: " +
-          (err?.message || "Unknown error")
-      );
+      pushToast(err?.message || `Could not ${decision.toLowerCase()} this request.`, "error");
+    } finally {
+      setBusyId(null);
     }
   };
 
-  /* ---------------- DATE CLICK ---------------- */
-
-  const handleDateClick = (info: any) => {
-    setSelectedDate(info.dateStr);
-
-    /*
-     * Admin/HOD can create activity by clicking date.
-     */
-    if (isAdmin || isHOD) {
-      setNewEvent((previous) => ({
-        ...previous,
-        date: info.dateStr,
-      }));
-
-      setShowForm(true);
+  const withdraw = async (item: ApprovalResponse) => {
+    setBusyId(String(item.id));
+    try {
+      if (source === "live") await approvalsApi.delete(String(item.id));
+      setItems((previous) => previous.filter((entry) => String(entry.id) !== String(item.id)));
+      pushToast("Request removed.", "success");
+    } catch (err: any) {
+      pushToast(err?.message || "The request could not be removed.", "error");
+    } finally {
+      setBusyId(null);
     }
   };
 
-  /* ---------------- EVENT CLICK ---------------- */
+  const submitRequest = async () => {
+    if (form.title.trim().length < 5) {
+      setFormError("Describe the request in at least 5 characters.");
+      return;
+    }
+    if (!form.assigned.trim()) {
+      setFormError("Name the approver (HOD / faculty in charge).");
+      return;
+    }
 
-  const handleEventClick = (info: any) => {
-    const clickedEvent = events.find(
-      (event) => String(event.id) === String(info.event.id)
-    );
-
-    if (clickedEvent) {
-      setSelectedEvent(clickedEvent);
-      setShowDetails(true);
+    setFormError("");
+    setSubmitting(true);
+    try {
+      if (source === "live") {
+        const created = await approvalsApi.create({
+          ...form,
+          title: form.title.trim(),
+          requested: form.requested.trim() || user?.name || "Faculty",
+          assigned: form.assigned.trim(),
+        });
+        setItems((previous) => [...previous, created]);
+      } else {
+        setItems((previous) => [
+          ...previous,
+          {
+            ...form,
+            id: `preview_${Date.now()}`,
+            status: "Pending",
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      }
+      pushToast("Request submitted to the HOD desk.", "success");
+      setShowForm(false);
+      setForm({
+        title: "",
+        requested: user?.name ?? "",
+        assigned: "",
+        priority: "Medium",
+        comments: "",
+      });
+      setTab("Pending");
+    } catch (err: any) {
+      pushToast(err?.message || "The request could not be submitted.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
-
-  /* ---------------- WORKFLOW ACTION ---------------- */
-
-  const handleStatusChange = (
-    newStatus: WorkflowStatus
-  ) => {
-    if (!selectedEvent) return;
-
-    setEvents((previous) =>
-      previous.map((event) =>
-        event.id === selectedEvent.id
-          ? {
-              ...event,
-              status: newStatus,
-            }
-          : event
-      )
-    );
-
-    setSelectedEvent({
-      ...selectedEvent,
-      status: newStatus,
-    });
-  };
-
-  /* ---------------- UPCOMING EVENTS ---------------- */
-
-  const upcomingEvents = [...events]
-    .sort(
-      (a, b) =>
-        new Date(a.date).getTime() -
-        new Date(b.date).getTime()
-    )
-    .slice(0, 5);
-
-  /* ---------------- TYPE ICON ---------------- */
-
-  const getTypeIcon = (type?: string) => {
-    switch (type) {
-      case "Academic":
-        return "📚";
-      case "Meeting":
-        return "👥";
-      case "Workshop":
-        return "🎓";
-      case "Research":
-        return "🔬";
-      case "Department Activity":
-        return "🏫";
-      default:
-        return "📅";
-    }
-  };
-
-  /* ---------------- ROLE LABEL ---------------- */
-
-  const roleLabel = isAdmin
-    ? "Administrator"
-    : isHOD
-    ? "Head of Department"
-    : "Faculty Member";
 
   return (
-    <div className="calendar-page">
-
-      {/* =====================================================
-          HEADER
-      ====================================================== */}
-
-      <section className="calendar-header">
-
+    <div className="approvals-page hs-page">
+      <header className="approvals-header">
         <div>
-          <div className="calendar-eyebrow">
-            🏫 SBJIT NAGPUR • CSE AIML DEPARTMENT
-          </div>
-
-          <h1>Academic Workflow Calendar</h1>
-
+          <div className="hs-kicker">SBJIT Nagpur · CSE (AI &amp; ML) Department</div>
+          <h1>Approvals Desk</h1>
           <p>
-            Plan, assign, review and manage department
-            activities from one intelligent academic calendar.
+            Requests raised by faculty and students, waiting on a department decision. Approve or
+            send back with a note — the requester sees it in their notifications.
           </p>
         </div>
 
-        <div className="header-actions">
-
-          <div className="role-badge">
-            <span>●</span>
-            {roleLabel}
-          </div>
-
-          {(isAdmin || isHOD) && (
-            <button
-              className="create-event-button"
-              onClick={() => {
-                setSelectedDate("");
-                setShowForm(true);
-              }}
-            >
-              <span>＋</span>
-              Create Activity
-            </button>
-          )}
+        <div className="approvals-header-actions">
+          <span className={`role-chip ${canReview ? "is-reviewer" : "is-requester"}`}>
+            {canReview ? "Reviewer access" : "Requester access"}
+          </span>
+          <button type="button" className="hs-btn hs-btn--primary" onClick={() => setShowForm(true)}>
+            ＋ New Request
+          </button>
         </div>
-      </section>
+      </header>
 
-      {/* =====================================================
-          ERROR
-      ====================================================== */}
-
-      {error && (
-        <div className="calendar-error">
-          ⚠️ {error}
+      {source === "preview" && (
+        <div className="approvals-note" role="status">
+          <div>
+            <strong>Offline preview</strong>
+            <span>
+              {error} Decisions here are local to this browser until the approval service responds.
+            </span>
+          </div>
+          <button type="button" onClick={load}>
+            Retry
+          </button>
         </div>
       )}
 
-      {/* =====================================================
-          STATISTICS
-      ====================================================== */}
+      <section className="approvals-stats" aria-label="Approval statistics">
+        <article className="hs-card approvals-stat">
+          <span className="hs-kicker">Awaiting decision</span>
+          <strong className="hs-stat-value">{stats.pending}</strong>
+          <small>{stats.stale} waiting more than 3 days</small>
+        </article>
 
-      <section className="stats-grid">
+        <article className="hs-card approvals-stat">
+          <span className="hs-kicker">High priority</span>
+          <strong className="hs-stat-value">{stats.highPriority}</strong>
+          <small>Flagged for the HOD desk</small>
+        </article>
 
-        <div className="stat-card total-card">
-          <div className="stat-icon">📅</div>
-          <div>
-            <span>Total Activities</span>
-            <strong>{statistics.total}</strong>
-          </div>
-        </div>
+        <article className="hs-card approvals-stat is-approved">
+          <span className="hs-kicker">Approved</span>
+          <strong className="hs-stat-value">{stats.approved}</strong>
+          <small>Cleared this cycle</small>
+        </article>
 
-        <div className="stat-card academic-card">
-          <div className="stat-icon">📚</div>
-          <div>
-            <span>Academic</span>
-            <strong>{statistics.academic}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card meeting-card">
-          <div className="stat-icon">👥</div>
-          <div>
-            <span>Meetings</span>
-            <strong>{statistics.meetings}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card workshop-card">
-          <div className="stat-icon">🎓</div>
-          <div>
-            <span>Workshops</span>
-            <strong>{statistics.workshops}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card pending-card">
-          <div className="stat-icon">⏳</div>
-          <div>
-            <span>Pending</span>
-            <strong>{statistics.pending}</strong>
-          </div>
-        </div>
-
+        <article className="hs-card approvals-stat is-rejected">
+          <span className="hs-kicker">Sent back</span>
+          <strong className="hs-stat-value">{stats.rejected}</strong>
+          <small>Need a revised request</small>
+        </article>
       </section>
 
-      {/* =====================================================
-          MAIN CALENDAR
-      ====================================================== */}
-
-      {loading ? (
-        <div className="calendar-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading academic calendar...</p>
+      <section className="approvals-toolbar" aria-label="Approval filters">
+        <div className="approvals-tabs" role="tablist">
+          {(["Pending", "Approved", "Rejected", "All"] as const).map((value) => (
+            <button
+              key={value}
+              role="tab"
+              type="button"
+              aria-selected={tab === value}
+              className={`approvals-tab ${tab === value ? "is-on" : ""}`}
+              onClick={() => setTab(value)}
+            >
+              {value}
+              <span className="hs-num">
+                {value === "All"
+                  ? items.length
+                  : items.filter((item) => asDecision(item.status) === value).length}
+              </span>
+            </button>
+          ))}
         </div>
-      ) : (
-        <section className="calendar-panel">
 
-          <div className="calendar-panel-header">
+        <div className="approvals-search">
+          <span aria-hidden="true">🔍</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search requests, requesters, approvers…"
+            aria-label="Search approval requests"
+          />
+        </div>
+      </section>
 
-            <div>
-              <h2>Department Calendar</h2>
-
-              <p>
-                {isFaculty
-                  ? "View your assigned academic activities."
-                  : "Click a date to create an activity • Click an event to view details"}
-              </p>
+      {advice && !loading && (
+        <section className="approvals-ai" aria-label="Suggested review order">
+          <span className="hs-kicker">Suggested order</span>
+          <p>{advice.message}</p>
+          {advice.suggestions.length > 0 && (
+            <div className="approvals-ai-chips">
+              {advice.suggestions.map((item, index) => (
+                <button
+                  key={item.id || item.title}
+                  type="button"
+                  className="approvals-ai-chip"
+                  onClick={() => setQuery(item.title)}
+                  title="Filter the queue to this request"
+                >
+                  <span className="hs-num">{index + 1}</span>
+                  <span>{item.title}</span>
+                  {item.reason && <em>{item.reason}</em>}
+                </button>
+              ))}
             </div>
-
-            <div className="calendar-legend">
-
-              <span>
-                <i className="legend-dot academic-dot"></i>
-                Academic
-              </span>
-
-              <span>
-                <i className="legend-dot meeting-dot"></i>
-                Meeting
-              </span>
-
-              <span>
-                <i className="legend-dot workshop-dot"></i>
-                Workshop
-              </span>
-
-              <span>
-                <i className="legend-dot research-dot"></i>
-                Research
-              </span>
-
-            </div>
-
-          </div>
-
-          <div className="calendar-wrapper">
-
-            <FullCalendar
-              plugins={[
-                dayGridPlugin,
-                timeGridPlugin,
-                interactionPlugin,
-              ]}
-              initialView="dayGridMonth"
-              events={calendarEvents}
-              height="auto"
-              dayMaxEvents={3}
-              editable={false}
-              selectable={isAdmin || isHOD}
-              dateClick={handleDateClick}
-              eventClick={handleEventClick}
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right:
-                  "dayGridMonth,timeGridWeek,timeGridDay",
-              }}
-              buttonText={{
-                today: "Today",
-                month: "Month",
-                week: "Week",
-                day: "Day",
-              }}
-            />
-
-          </div>
-
+          )}
         </section>
       )}
 
-      {/* =====================================================
-          WORKFLOW
-      ====================================================== */}
-
-      <section className="workflow-section">
-
-        <div className="section-heading">
-          <div>
-            <span className="section-label">
-              HIERASYNC WORKFLOW
-            </span>
-
-            <h2>Academic Activity Lifecycle</h2>
-
-            <p>
-              Every department activity follows a clear
-              responsibility and approval flow.
-            </p>
-          </div>
+      {loading ? (
+        <div className="approvals-loading">
+          <span className="loading-spinner" />
+          Loading approval queue…
         </div>
-
-        <div className="workflow">
-
-          <div className="workflow-step">
-            <div className="workflow-number">01</div>
-            <div className="workflow-icon">👤</div>
-            <h3>Plan</h3>
-            <p>HOD / Admin creates activity</p>
-          </div>
-
-          <div className="workflow-line"></div>
-
-          <div className="workflow-step">
-            <div className="workflow-number">02</div>
-            <div className="workflow-icon">📋</div>
-            <h3>Assign</h3>
-            <p>Activity assigned to faculty</p>
-          </div>
-
-          <div className="workflow-line"></div>
-
-          <div className="workflow-step">
-            <div className="workflow-number">03</div>
-            <div className="workflow-icon">👨‍🏫</div>
-            <h3>Execute</h3>
-            <p>Faculty works on activity</p>
-          </div>
-
-          <div className="workflow-line"></div>
-
-          <div className="workflow-step">
-            <div className="workflow-number">04</div>
-            <div className="workflow-icon">🔍</div>
-            <h3>Review</h3>
-            <p>HOD reviews completion</p>
-          </div>
-
-          <div className="workflow-line"></div>
-
-          <div className="workflow-step completed-step">
-            <div className="workflow-number">05</div>
-            <div className="workflow-icon">✓</div>
-            <h3>Completed</h3>
-            <p>Activity successfully closed</p>
-          </div>
-
+      ) : visible.length === 0 ? (
+        <div className="hs-card approvals-empty">
+          <span aria-hidden="true">✅</span>
+          <h2>Nothing in this queue</h2>
+          <p>
+            {query
+              ? "No request matches that search. Try another keyword."
+              : `${tab === "All" ? "The desk" : `${tab} requests`} is clear right now.`}
+          </p>
         </div>
+      ) : (
+        <ul className="approvals-list">
+          {visible.map((item) => {
+            const decision = asDecision(item.status);
+            const open = openId === String(item.id);
+            const ageDays = item.created_at
+              ? Math.max(
+                  0,
+                  Math.round((Date.now() - new Date(item.created_at).getTime()) / 86_400_000)
+                )
+              : 0;
 
-      </section>
+            return (
+              <li key={item.id}>
+                <article className={`hs-card approvals-card ${STATUS_TONE[decision]}`}>
+                  <div className="approvals-card-top">
+                    <div className="approvals-title-block">
+                      <span className={`prio ${PRIORITY_TONE[item.priority ?? "Medium"]}`}>
+                        {item.priority ?? "Medium"}
+                      </span>
+                      <span className="pill-status">{decision}</span>
+                      <h2>{item.title}</h2>
+                      <p className="approvals-meta">
+                        Raised by <strong>{item.requested || "—"}</strong> · to{" "}
+                        <strong>{item.assigned || "HOD Desk"}</strong>
+                        {item.created_at ? ` · ${formatDate(toISODate(item.created_at))}` : ""}
+                      </p>
+                    </div>
 
-      {/* =====================================================
-          UPCOMING ACTIVITIES
-      ====================================================== */}
+                    <div className="approvals-age">
+                      <span className="hs-num">{ageDays}</span>
+                      <small>day{ageDays === 1 ? "" : "s"} waiting</small>
+                    </div>
+                  </div>
 
-      <section className="upcoming-section">
+                  {item.comments && (
+                    <p className="approvals-note-body">
+                      <span className="hs-kicker">Note</span>
+                      {item.comments}
+                    </p>
+                  )}
 
-        <div className="section-heading">
-          <div>
-            <span className="section-label">
-              DEPARTMENT SCHEDULE
-            </span>
-
-            <h2>Upcoming Activities</h2>
-
-            <p>
-              Important academic events and responsibilities.
-            </p>
-          </div>
-
-          <span className="event-count">
-            {upcomingEvents.length} Events
-          </span>
-        </div>
-
-        <div className="upcoming-grid">
-
-          {upcomingEvents.length === 0 ? (
-            <div className="empty-events">
-              📅 No upcoming activities.
-            </div>
-          ) : (
-            upcomingEvents.map((event, index) => (
-
-              <div
-                className={`upcoming-card type-${event.type
-                  ?.toLowerCase()
-                  .replaceAll(" ", "-")}`}
-                key={event.id || index}
-                onClick={() => {
-                  setSelectedEvent(event);
-                  setShowDetails(true);
-                }}
-              >
-
-                <div className="upcoming-top">
-
-                  <span className="event-type">
-                    {getTypeIcon(event.type)}
-                    {event.type}
-                  </span>
-
-                  <span
-                    className={`status-pill ${
-                      event.status
-                        ? event.status
-                            .toLowerCase()
-                            .replaceAll(" ", "-")
-                        : "assigned"
-                    }`}
-                  >
-                    {event.status || "Assigned"}
-                  </span>
-
-                </div>
-
-                <h3>{event.title}</h3>
-
-                <div className="event-info">
-                  <span>
-                    📅{" "}
-                    {new Date(event.date).toLocaleDateString(
-                      "en-IN",
-                      {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      }
+                  <div className="approvals-card-actions">
+                    {canReview && decision === "Pending" ? (
+                      <>
+                        <button
+                          type="button"
+                          className="hs-btn hs-btn--primary"
+                          disabled={busyId === String(item.id)}
+                          onClick={() => decide(item, "Approved")}
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          type="button"
+                          className="hs-btn hs-btn--ghost"
+                          disabled={busyId === String(item.id)}
+                          onClick={() => decide(item, "Rejected")}
+                        >
+                          ↩ Send back
+                        </button>
+                        <button
+                          type="button"
+                          className="link-btn"
+                          onClick={() => {
+                            setOpenId(open ? null : String(item.id));
+                            setNote(item.comments ?? "");
+                          }}
+                        >
+                          {open ? "Hide note" : "Add reviewer note"}
+                        </button>
+                      </>
+                    ) : (
+                      <span className="approvals-decided">
+                        {decision === "Pending"
+                          ? "Waiting for the HOD desk"
+                          : `Closed ${decision.toLowerCase()}${
+                              item.reviewed_at ? ` on ${formatDate(toISODate(item.reviewed_at))}` : ""
+                            }`}
+                      </span>
                     )}
-                  </span>
 
-                  <span>
-                    👨‍🏫 {event.person}
-                  </span>
-                </div>
+                    {decision === "Pending" && !canReview && (
+                      <button
+                        type="button"
+                        className="link-btn"
+                        disabled={busyId === String(item.id)}
+                        onClick={() => withdraw(item)}
+                      >
+                        Withdraw request
+                      </button>
+                    )}
+                  </div>
 
-                <button className="view-details">
-                  View Details →
-                </button>
+                  {open && (
+                    <div className="approvals-note-form">
+                      <textarea
+                        className="hs-field"
+                        rows={2}
+                        value={note}
+                        onChange={(event) => setNote(event.target.value)}
+                        placeholder="Why is this being approved or sent back? The requester will see this."
+                      />
+                    </div>
+                  )}
+                </article>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-              </div>
-
-            ))
-          )}
-
-        </div>
-
-      </section>
-
-      {/* =====================================================
-          AI ASSISTANT
-      ====================================================== */}
-
-      <section className="ai-calendar-card">
-
-        <div className="ai-icon">🤖</div>
-
-        <div className="ai-content">
-
-          <div className="ai-title-row">
-            <h2>HieraSync AI Calendar Assistant</h2>
-
-            <span className="ai-active">
-              ● AI Active
-            </span>
-          </div>
-
-          <h3>Smart Academic Planning</h3>
-
-          <p>{aiInsights}</p>
-
-        </div>
-
-        <button className="ai-button">
-          View AI Insights →
-        </button>
-
-      </section>
-
-      {/* =====================================================
-          CREATE ACTIVITY MODAL
-      ====================================================== */}
-
-      {showForm && (isAdmin || isHOD) && (
-
-        <div
-          className="modal-overlay"
-          onClick={() => setShowForm(false)}
-        >
-
+      {showForm && (
+        <div className="modal-overlay" onMouseDown={() => setShowForm(false)}>
           <div
-            className="event-modal"
-            onClick={(e) => e.stopPropagation()}
+            className="approvals-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="New approval request"
+            onMouseDown={(event) => event.stopPropagation()}
           >
-
-            <div className="modal-header">
-
+            <div className="approvals-modal-head">
               <div>
-                <span className="modal-label">
-                  ACADEMIC WORKFLOW
-                </span>
-
-                <h2>Create Department Activity</h2>
-
-                <p>
-                  Add a new academic workflow activity.
-                </p>
+                <div className="hs-kicker">HOD desk</div>
+                <h2>New Approval Request</h2>
               </div>
-
               <button
-                className="close-modal"
+                type="button"
+                className="icon-btn"
                 onClick={() => setShowForm(false)}
+                aria-label="Close"
               >
                 ×
               </button>
-
             </div>
 
-            <div className="form-grid">
-
-              <div className="form-field full-width">
-
-                <label>Activity Title *</label>
-
+            <div className="approvals-modal-body">
+              <label>
+                What needs approval? *
                 <input
-                  value={newEvent.title}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      title: e.target.value,
-                    })
-                  }
-                  placeholder="e.g. Final Year Project Review"
+                  className="hs-field"
+                  value={form.title}
+                  onChange={(event) => setForm({ ...form, title: event.target.value })}
+                  placeholder="e.g. Lab equipment purchase for AI/ML wing"
+                  autoFocus
                 />
+              </label>
 
+              <div className="approvals-form-row">
+                <label>
+                  Requested by
+                  <input
+                    className="hs-field"
+                    value={form.requested}
+                    onChange={(event) => setForm({ ...form, requested: event.target.value })}
+                  />
+                </label>
+
+                <label>
+                  Approver *
+                  <input
+                    className="hs-field"
+                    value={form.assigned}
+                    onChange={(event) => setForm({ ...form, assigned: event.target.value })}
+                    placeholder="HOD / faculty in charge"
+                  />
+                </label>
               </div>
 
-              <div className="form-field">
-
-                <label>Activity Date *</label>
-
-                <input
-                  type="date"
-                  value={newEvent.date}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      date: e.target.value,
-                    })
-                  }
-                />
-
-              </div>
-
-              <div className="form-field">
-
-                <label>Activity Type *</label>
-
+              <label>
+                Priority
                 <select
-                  value={newEvent.type}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      type: e.target.value as ActivityType,
-                    })
-                  }
+                  className="hs-field"
+                  value={form.priority}
+                  onChange={(event) => setForm({ ...form, priority: event.target.value })}
                 >
-                  <option>Academic</option>
-                  <option>Meeting</option>
-                  <option>Workshop</option>
-                  <option>Department Activity</option>
-                  <option>Research</option>
-                </select>
-
-              </div>
-
-              <div className="form-field">
-
-                <label>Start Time</label>
-
-                <input
-                  type="time"
-                  value={newEvent.startTime}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      startTime: e.target.value,
-                    })
-                  }
-                />
-
-              </div>
-
-              <div className="form-field">
-
-                <label>End Time</label>
-
-                <input
-                  type="time"
-                  value={newEvent.endTime}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      endTime: e.target.value,
-                    })
-                  }
-                />
-
-              </div>
-
-              <div className="form-field">
-
-                <label>Priority</label>
-
-                <select
-                  value={newEvent.priority}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      priority: e.target.value as
-                        | "Low"
-                        | "Medium"
-                        | "High",
-                    })
-                  }
-                >
-                  <option>Low</option>
-                  <option>Medium</option>
                   <option>High</option>
+                  <option>Medium</option>
+                  <option>Low</option>
                 </select>
+              </label>
 
-              </div>
-
-              <div className="form-field">
-
-                <label>Responsible Faculty *</label>
-
-                <select
-                  value={newEvent.person}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      person: e.target.value,
-                    })
-                  }
-                >
-
-                  <option value="">
-                    Select responsible faculty
-                  </option>
-
-                  {facultyList.map((faculty) => (
-                    <option
-                      key={faculty.id}
-                      value={faculty.name}
-                    >
-                      {faculty.name}
-                    </option>
-                  ))}
-
-                </select>
-
-              </div>
-
-              <div className="form-field full-width">
-
-                <label>Description</label>
-
+              <label>
+                Justification
                 <textarea
-                  rows={4}
-                  value={newEvent.description}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      description: e.target.value,
-                    })
-                  }
-                  placeholder="Describe the academic activity..."
+                  className="hs-field"
+                  rows={3}
+                  value={form.comments}
+                  onChange={(event) => setForm({ ...form, comments: event.target.value })}
+                  placeholder="Budget, dates, who benefits…"
                 />
+              </label>
 
-              </div>
-
+              {formError && <p className="form-error">{formError}</p>}
             </div>
 
-            <div className="modal-actions">
-
-              <button
-                className="cancel-button"
-                onClick={() => setShowForm(false)}
-              >
+            <div className="approvals-modal-foot">
+              <button type="button" className="hs-btn hs-btn--ghost" onClick={() => setShowForm(false)}>
                 Cancel
               </button>
-
               <button
-                className="save-event-button"
-                onClick={handleCreateEvent}
+                type="button"
+                className="hs-btn hs-btn--primary"
+                onClick={submitRequest}
+                disabled={submitting}
               >
-                ✓ Create Activity
+                {submitting ? "Submitting…" : "Submit request"}
               </button>
-
             </div>
-
           </div>
-
         </div>
       )}
 
-      {/* =====================================================
-          EVENT DETAILS MODAL
-      ====================================================== */}
-
-      {showDetails && selectedEvent && (
-
-        <div
-          className="modal-overlay"
-          onClick={() => setShowDetails(false)}
-        >
-
-          <div
-            className="details-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-
-            <div className="details-header">
-
-              <div
-                className={`details-icon type-${selectedEvent.type
-                  ?.toLowerCase()
-                  .replaceAll(" ", "-")}`}
-              >
-                {getTypeIcon(selectedEvent.type)}
-              </div>
-
-              <div>
-
-                <span className="modal-label">
-                  {selectedEvent.type}
-                </span>
-
-                <h2>{selectedEvent.title}</h2>
-
-              </div>
-
-              <button
-                className="close-modal"
-                onClick={() => setShowDetails(false)}
-              >
-                ×
-              </button>
-
+      {toasts.length > 0 && (
+        <div className="approvals-toasts" role="status" aria-live="polite">
+          {toasts.map((toast) => (
+            <div key={toast.id} className={`toast toast--${toast.tone}`}>
+              <span aria-hidden="true">
+                {toast.tone === "success" ? "✓" : toast.tone === "error" ? "!" : "i"}
+              </span>
+              {toast.text}
             </div>
-
-            <div className="details-date">
-              📅{" "}
-              {new Date(
-                selectedEvent.date
-              ).toLocaleDateString("en-IN", {
-                weekday: "long",
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-              })}
-            </div>
-
-            <div className="details-grid">
-
-              <div>
-                <span>Responsible Faculty</span>
-                <strong>
-                  👨‍🏫 {selectedEvent.person}
-                </strong>
-              </div>
-
-              <div>
-                <span>Priority</span>
-                <strong>
-                  ⚡ {selectedEvent.priority || "Medium"}
-                </strong>
-              </div>
-
-              <div>
-                <span>Time</span>
-                <strong>
-                  🕐{" "}
-                  {selectedEvent.startTime || "10:00"} –
-                  {selectedEvent.endTime || "11:00"}
-                </strong>
-              </div>
-
-              <div>
-                <span>Status</span>
-                <strong>
-                  ● {selectedEvent.status || "Assigned"}
-                </strong>
-              </div>
-
-            </div>
-
-            {selectedEvent.description && (
-              <div className="description-box">
-                <span>Description</span>
-                <p>{selectedEvent.description}</p>
-              </div>
-            )}
-
-            {/* ROLE BASED ACTIONS */}
-
-            {isFaculty && (
-              <div className="faculty-actions">
-
-                <p>
-                  This activity has been assigned to you.
-                  Update the status as you progress.
-                </p>
-
-                <button
-                  onClick={() =>
-                    handleStatusChange("In Progress")
-                  }
-                >
-                  ▶ Start Activity
-                </button>
-
-                <button
-                  onClick={() =>
-                    handleStatusChange("Completed")
-                  }
-                >
-                  ✓ Mark Completed
-                </button>
-
-              </div>
-            )}
-
-            {isHOD && (
-              <div className="hod-actions">
-
-                <span className="action-heading">
-                  HOD Workflow Actions
-                </span>
-
-                <div>
-
-                  <button
-                    onClick={() =>
-                      handleStatusChange("In Progress")
-                    }
-                  >
-                    ▶ Mark In Progress
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      handleStatusChange("Review")
-                    }
-                  >
-                    🔍 Send for Review
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      handleStatusChange("Completed")
-                    }
-                  >
-                    ✓ Complete
-                  </button>
-
-                </div>
-
-              </div>
-            )}
-
-            {isAdmin && (
-              <div className="admin-actions">
-
-                <span className="action-heading">
-                  Administrator Controls
-                </span>
-
-                <div>
-
-                  <button
-                    onClick={() =>
-                      handleStatusChange("Completed")
-                    }
-                  >
-                    ✓ Mark Completed
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      alert(
-                        "Edit functionality can be connected to the backend here."
-                      )
-                    }
-                  >
-                    ✎ Edit Activity
-                  </button>
-
-                </div>
-
-              </div>
-            )}
-
-          </div>
-
+          ))}
         </div>
       )}
-
     </div>
   );
 }

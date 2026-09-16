@@ -106,7 +106,7 @@ export default function Reports() {
 
   if (loading) {
     return (
-      <div className="p-8 bg-[#F8FAFC] min-h-screen flex items-center justify-center">
+      <div className="hs-page flex min-h-[60vh] items-center justify-center">
         <div className="flex items-center gap-3 text-indigo-600 font-semibold text-sm">
           <RefreshCw className="w-5 h-5 animate-spin" />
           <span>Loading Department Analytics & Reports...</span>
@@ -116,7 +116,7 @@ export default function Reports() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans bg-[#F8FAFC] min-h-screen text-slate-800">
+    <div className="hs-page space-y-6 font-sans text-slate-800">
       
       {/* Print Styles */}
       <style>{`
