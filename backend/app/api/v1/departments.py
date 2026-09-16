@@ -54,7 +54,8 @@ def create_department(
         "id": dept_id,
         "name": dept_in.name,
         "code": code,
-        "hod_id": current_user.id
+        "hod_id": current_user.id,
+        "is_hod": dept_in.is_hod,
     }
     
     departments_ref.document(dept_id).set(dept_data)
@@ -65,7 +66,12 @@ def create_department(
     # empty - the page reported success while the account pointed at nothing.
     user_patch = {"department_id": dept_id}
     if is_bootstrap:
+        # The account that starts the system becomes its HOD: registration defaults
+        # to FACULTY, and a FACULTY dashboard cannot approve anyone - which would
+        # leave the department with a leader who has no leader tools.
         user_patch["status"] = "ACTIVE"
+        if current_user.role not in [RoleEnum.ADMIN, RoleEnum.HOD, RoleEnum.PRINCIPAL]:
+            user_patch["role"] = RoleEnum.HOD.value
     db.collection('users').document(current_user.id).set(user_patch, merge=True)
 
     return {**dept_data, "bootstrap": is_bootstrap}

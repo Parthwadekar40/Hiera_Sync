@@ -503,6 +503,7 @@ class GlobalSearchResponse(BaseModel):
 # Department Schemas
 class DepartmentCreate(BaseModel):
     name: str
+    is_hod: bool = True
 
 class DepartmentResponse(BaseModel):
     id: str

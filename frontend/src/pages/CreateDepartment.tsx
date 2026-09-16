@@ -1,13 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { departmentsApi } from "../api/departments";
+import type { DepartmentResponse } from "../api/departments";
 import { useAuth } from "../contexts/AuthContext";
-import { Building2, Save } from "lucide-react";
+import { Building2, Copy, Save } from "lucide-react";
 
 export default function CreateDepartment() {
-  const { user } = useAuth();
+  const { refreshUser } = useAuth();
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [managed, setManaged] = useState<DepartmentResponse | null | undefined>(undefined);
+  const [created, setCreated] = useState<DepartmentResponse | null>(null);
+
+  // Ask the API rather than trusting user.department_id: registration writes the
+  // placeholder "AIML", and that used to hide this page forever for the very first
+  // account - the one that has to create the department.
+  useEffect(() => {
+    if (created) return;
+    departmentsApi
+      .getMine()
+      .then((dept) => setManaged(dept ?? null))
+      .catch(() => setManaged(null));
+  }, [created]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,8 +31,10 @@ export default function CreateDepartment() {
     setError("");
     setSubmitting(true);
     try {
-      await departmentsApi.create({ name: name.trim() });
-      window.location.reload(); // Quick way to refresh app state and hide this page
+      const dept = await departmentsApi.create({ name: name.trim() });
+      setCreated(dept);
+      await refreshUser();
+      setManaged(dept);
     } catch (err: any) {
       setError(err.message || "Failed to create department");
     } finally {
@@ -25,10 +42,52 @@ export default function CreateDepartment() {
     }
   };
 
-  if (user?.department_id) {
+  if (managed === undefined) {
+    return (
+      <div className="hs-page py-16 text-center text-sm text-ink-muted">Checking your department…</div>
+    );
+  }
+
+  if (created) {
+    return (
+      <div className="hs-page hs-page--narrow">
+        <div className="hs-card p-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">“{created.name}” is live</h1>
+          <p className="text-sm text-gray-500 mb-6">
+            Share this invitation code with your faculty — they enter it on the Join Department page
+            and you approve them from there.
+          </p>
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <code className="text-3xl font-bold tracking-[0.25em] text-blue-700 bg-blue-50 rounded-xl px-6 py-3 select-all">
+              {created.code}
+            </code>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(created.code)}
+              className="p-3 rounded-xl border border-gray-200 hover:bg-gray-50"
+              title="Copy code"
+            >
+              <Copy size={18} />
+            </button>
+          </div>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-700"
+          >
+            Go to dashboard <Save size={16} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (managed) {
     return (
       <div className="hs-page py-16 text-center">
         <h1 className="text-2xl font-bold">You already manage a department.</h1>
+        <p className="text-sm text-gray-500 mt-2">
+          Invitation code: <strong>{managed.code}</strong>
+        </p>
       </div>
     );
   }

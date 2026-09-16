@@ -289,6 +289,24 @@ export default function JoinDepartment() {
           Enter the unique department invitation code provided by your Head of Department or Administrator.
         </p>
 
+        {!status && (
+          <div className="jd-status-box pending" style={{ marginBottom: "16px" }}>
+            <div className="jd-status-header">
+              <span className="jd-status-tag">
+                <ShieldCheck size={18} />
+                <span>No department yet?</span>
+              </span>
+            </div>
+            <p className="jd-status-desc">
+              If this is the first account in the system, there is no code to enter yet —{" "}
+              <a href="/create-department" className="font-semibold underline">
+                create the department
+              </a>{" "}
+              and you will be made its HOD, with an invitation code to share.
+            </p>
+          </div>
+        )}
+
         {status?.status === "Rejected" && (
           <div className="jd-status-box rejected">
             <div className="jd-status-header">

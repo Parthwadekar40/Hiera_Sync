@@ -109,6 +109,22 @@ activities seeded on first read, accounts activated immediately. Check `http://1
 To use real Firestore instead, follow **Setup Instructions → Firebase Setup** below; the app switches
 over as soon as `backend/firebase-credentials.json` exists and `FIREBASE_PROJECT_ID` matches.
 
+### Starting a fresh Firestore project (first login)
+
+Login checks the bcrypt hash on the `users/{uid}` document in Firestore — it does **not** ask Firebase
+Authentication. So an account created in the Firebase console cannot sign in, and an empty database has
+no account to sign in with. Bootstrap it in this order:
+
+1. Open `http://localhost:5173/register` and create your own account (this writes both the Auth user
+   and the Firestore profile). New accounts come back `PENDING`.
+2. You are redirected to **/join-department**, which now offers *"No department yet? → create the
+   department"*. Open it and create the department — with an empty database that single action
+   activates your account, makes you its **HOD**, and shows the invitation code.
+3. Give that code to your faculty. They register, enter the code on /join-department, and you approve
+   them on the same screen.
+
+`scripts/seed_demo.py --only-admin --password '...'` does steps 1–2 for you and prints the code.
+
 ## Design System
 
 All shared visual decisions live in `frontend/src/index.css`; page stylesheets consume the tokens

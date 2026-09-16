@@ -21,9 +21,12 @@ export const ProtectedRoute = ({ allowedRoles }: { allowedRoles?: string[] }) =>
   }
 
   if (user.status === "PENDING") {
-    // If pending, they can only view a specific pending page (e.g. /join-department).
-    // Allow them to navigate to join-department, otherwise block.
-    if (location.pathname !== '/join-department') {
+    // A pending account may only see the pages that can get it activated:
+    // /join-department (submit a code) and /create-department - without the latter,
+    // a fresh database can never be started, because approving a request needs an
+    // active HOD and there is none yet.
+    const bootstrapPages = ['/join-department', '/create-department'];
+    if (!bootstrapPages.includes(location.pathname)) {
        return <Navigate to="/join-department" replace />;
     }
   } else if (user.status !== "ACTIVE") {
