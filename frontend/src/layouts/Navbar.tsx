@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotifications } from "../contexts/NotificationContext";
@@ -10,23 +10,56 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
-  
+
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const searchWrapRef = useRef<HTMLDivElement | null>(null);
+  const menuWrapRef = useRef<HTMLDivElement | null>(null);
 
   const handleLogout = () => {
+    setMenuOpen(false);
     logout();
     navigate("/login");
   };
+
+  // Close overlays on Escape / outside click - the profile menu used to be
+  // hover-only, which made it unusable with a keyboard or on touch devices.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setSearch("");
+      }
+    };
+
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuWrapRef.current && !menuWrapRef.current.contains(target)) {
+        setMenuOpen(false);
+      }
+      if (searchWrapRef.current && !searchWrapRef.current.contains(target)) {
+        setResults([]);
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("mousedown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("mousedown", onPointerDown);
+    };
+  }, []);
 
   useEffect(() => {
     if (!search.trim()) {
       setResults([]);
       return;
     }
-    
-    const delayDebounceFn = setTimeout(async () => {
+
+    const debounce = setTimeout(async () => {
       setIsSearching(true);
       try {
         const data = await searchApi.globalSearch(search);
@@ -39,116 +72,135 @@ export default function Navbar() {
       }
     }, 500);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(debounce);
   }, [search]);
 
+  const goTo = (type?: string) => {
+    setSearch("");
+    if (type === "faculty") navigate("/employees");
+    else if (type === "task") navigate("/tasks");
+    else if (type === "event") navigate("/calendar");
+    else if (type === "notification") navigate("/notifications");
+    else navigate("/dashboard");
+  };
+
   return (
-    <header className="h-20 bg-white border-b border-[#E5E5E5] shadow-xs flex items-center justify-between px-6 lg:px-8 z-30 font-sans">
-      
-      {/* Search Input Box */}
-      <div className="relative">
-        <div className="flex items-center bg-[#F7F7F5] border border-[#E5E5E5] focus-within:border-[#6D28D9] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#6D28D9]/10 rounded-xl px-4 py-2.5 w-72 sm:w-96 transition-all duration-200">
-          <FaSearch className="text-[#A1A1AA] shrink-0" />
+    <header className="hs-shell-pad sticky top-0 z-30 flex h-20 items-center justify-between gap-4 border-b border-[#E5E5E5] bg-white/95 font-sans backdrop-blur">
+      <div className="relative min-w-0 flex-1 sm:flex-none" ref={searchWrapRef}>
+        <div className="flex w-full items-center rounded-md border border-[#E5E5E5] bg-canvas px-3.5 py-2 transition-all duration-200 focus-within:border-brand-plum focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-plum/10 sm:w-80 lg:w-96">
+          <FaSearch className="shrink-0 text-[#A1A1AA]" />
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             placeholder="Search tasks, faculty, notifications..."
-            className="outline-none ml-3 w-full bg-transparent text-sm text-[#171717] placeholder-[#A1A1AA] font-medium"
+            aria-label="Search department records"
+            className="ml-3 w-full min-w-0 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-[#A1A1AA]"
           />
         </div>
 
-        {/* Search Suggestions Dropdown */}
-        {search && (
-          <div className="absolute top-14 left-0 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-[#E5E5E5] z-50 max-h-96 overflow-y-auto divide-y divide-[#F4F4F5]">
+        {search.trim() !== "" && (
+          <div className="absolute left-0 top-[calc(100%+8px)] z-50 max-h-96 w-full overflow-y-auto rounded-lg border border-[#E5E5E5] bg-white shadow-xl sm:w-96">
             {isSearching ? (
-              <div className="p-4 text-[#71717A] text-center text-sm font-medium">Searching department records...</div>
+              <div className="p-4 text-center text-sm font-medium text-[#71717A]">
+                Searching department records...
+              </div>
             ) : results.length > 0 ? (
               results.map((item, index) => (
-                <div
+                <button
                   key={item.id || index}
-                  onClick={() => {
-                    setSearch("");
-                    if (item.type === "faculty") navigate("/employees");
-                    else if (item.type === "task") navigate("/tasks");
-                    else if (item.type === "event") navigate("/calendar");
-                    else if (item.type === "notification") navigate("/notifications");
-                    else navigate("/dashboard");
-                  }}
-                  className="px-5 py-3 hover:bg-[#F5F3FF] cursor-pointer text-[#171717] flex flex-col transition"
+                  type="button"
+                  onClick={() => goTo(item.type)}
+                  className="flex w-full flex-col items-start px-4 py-2.5 text-left transition hover:bg-[#F5F3FF]"
                 >
-                  <span className="font-semibold text-sm text-[#171717]">{item.title}</span>
-                  <span className="text-xs text-[#6D28D9] font-medium capitalize mt-0.5">{item.type}</span>
-                </div>
+                  <span className="text-sm font-semibold text-ink">{item.title}</span>
+                  <span className="mt-0.5 text-xs font-medium capitalize text-brand-plum">
+                    {item.type}
+                  </span>
+                </button>
               ))
             ) : (
-              <div className="p-4 text-[#71717A] text-center text-sm font-medium">No results found</div>
+              <div className="p-4 text-center text-sm font-medium text-[#71717A]">
+                No results found
+              </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Right Header Navigation */}
-      <div className="flex items-center gap-5 sm:gap-7">
-        
-        {/* Department Badge */}
-        <div className="hidden md:flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#F5F3FF] border border-[#EDE9FE]">
-          <GraduationCap className="w-4 h-4 text-[#6D28D9]" />
+      <div className="flex shrink-0 items-center gap-3 sm:gap-5">
+        <div className="hidden items-center gap-2.5 rounded-pill border border-[#EDE9FE] bg-[#F5F3FF] px-3 py-1.5 md:flex">
+          <GraduationCap className="h-4 w-4 text-brand-plum" />
           <div className="text-left">
-            <h3 className="font-bold text-xs text-[#2E1065] leading-tight">AIML Department - SBJIT</h3>
-            <p className="text-[11px] text-[#6D28D9] font-medium leading-tight">Nagpur Campus</p>
+            <h3 className="text-xs font-semibold leading-tight text-[#2E1065]">
+              AIML Department · SBJIT
+            </h3>
+            <p className="hs-kicker text-[10px] text-[#7C6AAE]">Nagpur Campus</p>
           </div>
         </div>
 
-        {/* Notification Bell Button */}
         <button
           onClick={() => navigate("/notifications")}
-          className="relative p-2.5 rounded-xl bg-[#F7F7F5] hover:bg-[#F5F3FF] hover:text-[#6D28D9] text-[#525252] border border-[#E5E5E5] transition shadow-xs"
+          className="relative rounded-md border border-[#E5E5E5] bg-canvas p-2.5 text-ink-soft shadow-xs transition hover:bg-[#F5F3FF] hover:text-brand-plum"
           title="Notifications"
+          aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         >
           <FaBell className="text-base" />
-          {/* Active dynamic pulse badge indicator */}
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1">
-              <span className="animate-ping absolute inset-0 rounded-full bg-rose-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-4 min-w-[16px] px-1 bg-[#E11D48] text-white text-[10px] font-bold items-center justify-center">
-                {unreadCount}
-              </span>
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-pill bg-[#E11D48] px-1 text-[10px] font-bold text-white">
+              {unreadCount}
             </span>
           )}
         </button>
 
-        {/* User Profile Dropdown Menu */}
-        <div className="relative group">
-          <div className="flex items-center gap-3 bg-[#F7F7F5] hover:bg-[#EFEFEF] border border-[#E5E5E5] px-3.5 py-1.5 rounded-xl cursor-pointer transition">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#6D28D9] to-[#9333EA] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-              {user?.name ? user.name.substring(0, 2).toUpperCase() : <FaUserCircle className="text-xl" />}
-            </div>
-            
-            <div className="hidden sm:block text-left">
-              <h3 className="font-bold text-sm text-[#171717] leading-tight">{user?.name || "Admin User"}</h3>
-              <p className="text-xs text-[#737373] font-medium leading-tight">{user?.role || "ADMIN"}</p>
-            </div>
-          </div>
+        <div className="relative" ref={menuWrapRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            className="flex items-center gap-3 rounded-md border border-[#E5E5E5] bg-canvas px-3 py-1.5 transition hover:bg-[#EFEFEF]"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-gradient-to-tr from-brand-plum to-[#9333EA] text-xs font-bold text-white shadow-xs">
+              {user?.name ? (
+                user.name.substring(0, 2).toUpperCase()
+              ) : (
+                <FaUserCircle className="text-xl" />
+              )}
+            </span>
 
-          {/* Logout Hover Menu */}
-          <div className="hidden group-hover:block absolute right-0 top-full pt-2 z-50 w-48">
-            <div className="bg-white rounded-2xl shadow-xl border border-[#E5E5E5] p-2">
-              <div className="px-3 py-2 border-b border-[#F4F4F5] mb-1">
-                <p className="text-xs font-medium text-[#737373]">Signed in as</p>
-                <p className="text-xs font-bold text-[#171717] truncate">{user?.email || "admin@campuspulse.com"}</p>
+            <span className="hidden text-left sm:block">
+              <span className="block text-sm font-semibold leading-tight text-ink">
+                {user?.name || "Admin User"}
+              </span>
+              <span className="block text-xs font-medium leading-tight text-ink-muted">
+                {user?.role || "ADMIN"}
+              </span>
+            </span>
+          </button>
+
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 rounded-lg border border-[#E5E5E5] bg-white p-1.5 shadow-xl"
+            >
+              <div className="mb-1 border-b border-[#F4F4F5] px-3 py-2">
+                <p className="hs-kicker">Signed in as</p>
+                <p className="mt-1 truncate text-xs font-bold text-ink">
+                  {user?.email || "admin@hierasync.edu"}
+                </p>
               </div>
-              <button 
+              <button
+                role="menuitem"
                 onClick={handleLogout}
-                className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition"
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-bold text-rose-600 transition hover:bg-rose-50"
               >
                 <FaSignOutAlt className="text-sm" />
                 <span>Sign Out</span>
               </button>
             </div>
-          </div>
+          )}
         </div>
-
       </div>
     </header>
   );

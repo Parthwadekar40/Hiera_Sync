@@ -1,69 +1,491 @@
 @import "tailwindcss";
 
-@layer base {
-  html {
-    font-size: 18px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-  }
+/* =========================================================
+   HIERASYNC AI - GLOBAL DESIGN SYSTEM
+   · Type scale: Roboto Slab (display) / Manrope (UI) /
+     Saira (labels) / Google Sans Flex (data)
+   · Bento surfaces: one sharp corner scale, one gutter and
+     one content width for every page
+   ========================================================= */
+
+@theme {
+  /* ---------- Type ---------- */
+  --font-sans: "Manrope", "Google Sans Flex", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Roboto Slab", "Manrope", ui-serif, Georgia, serif;
+  --font-label: "Saira", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-data: "Google Sans Flex", "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  /* Root font-size is normalised to 16px; sizes are nudged up so the
+     Tailwind pages keep the density they had at the old 18px root. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.15rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.4rem;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6rem;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.7rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.8rem;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 2.1rem;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 2.45rem;
+  --text-4xl: 2.375rem;
+  --text-4xl--line-height: 2.8rem;
+
+  /* ---------- Corners (sharpened bento scale) ---------- */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-card: 12px;
+  --radius-hero: 14px;
+  --radius-2xl: 12px;
+  --radius-3xl: 14px;
+  --radius-4xl: 16px;
+  --radius-pill: 999px;
+
+  /* ---------- Palette ---------- */
+  --color-canvas: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-ink: #171717;
+  --color-ink-soft: #525252;
+  --color-ink-muted: #737373;
+  --color-line: #e8e6ef;
+  --color-brand-plum: #6d28d9;
+  --color-brand-coral: #ff4d4d;
+  --color-brand-crimson: #f43f5e;
+  --color-brand-indigo: #4f46e5;
+  --color-brand-violet: #6366f1;
+  --color-tint-mint: #e6fffa;
+  --color-tint-lilac: #f3e8ff;
+  --color-tint-peach: #fff1f2;
+  --color-tint-sky: #eff6ff;
+
+  --shadow-bento: 0 1px 2px rgba(23, 23, 23, 0.04),
+    0 8px 24px rgba(23, 23, 23, 0.05);
+  --shadow-bento-hover: 0 2px 6px rgba(23, 23, 23, 0.06),
+    0 16px 36px rgba(23, 23, 23, 0.09);
 }
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Page geometry - identical on every page so content never looks
+     nudged left or right when navigating between screens. */
+  --hs-content-max: 1440px;
+  --hs-gutter: clamp(16px, 2.4vw, 34px);
+  --hs-page-pad: 24px var(--hs-gutter) 44px;
+
+  /* Aliases so page stylesheets share one scale */
+  --hs-font-ui: var(--font-sans);
+  --hs-font-display: var(--font-display);
+  --hs-font-label: var(--font-label);
+  --hs-font-data: var(--font-data);
+
+  --hs-radius-xs: var(--radius-xs);
+  --hs-radius-sm: var(--radius-sm);
+  --hs-radius-md: var(--radius-md);
+  --hs-radius-lg: var(--radius-lg);
+  --hs-radius-card: var(--radius-card);
+  --hs-radius-hero: var(--radius-hero);
+  --hs-radius-pill: var(--radius-pill);
+
+  --hs-border: rgba(23, 23, 23, 0.08);
+  --hs-border-subtle: rgba(23, 23, 23, 0.05);
+  --hs-border-strong: rgba(23, 23, 23, 0.16);
+
+  --hs-shadow-xs: 0 1px 2px rgba(23, 23, 23, 0.04);
+  --hs-shadow-sm: 0 2px 6px rgba(23, 23, 23, 0.04),
+    0 1px 2px rgba(23, 23, 23, 0.02);
+  --hs-shadow-card: 0 1px 2px rgba(23, 23, 23, 0.04),
+    0 8px 24px rgba(23, 23, 23, 0.05);
+  --hs-shadow-card-hover: 0 2px 6px rgba(23, 23, 23, 0.06),
+    0 16px 36px rgba(23, 23, 23, 0.09);
+
+  /* FullCalendar theme (light, tied to the app palette) */
+  --fc-border-color: var(--hs-border);
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #fafafa;
+  --fc-neutral-text-color: #737373;
+  --fc-today-bg-color: #f6f2ff;
+  --fc-now-indicator-color: #e11d48;
+  --fc-event-border-color: transparent;
+  --fc-small-font-size: 0.78rem;
+
+  font-family: var(--font-sans);
   line-height: 1.5;
-  font-weight: 400;
+  color: #171717;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: #f8fafc;
-  /* Tailwind slate-50 base neutral canvas */
-  color: #1e293b;
-  /* slate-800 text */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: 16px;
+    scrollbar-gutter: stable;
+    scroll-behavior: smooth;
+    background-color: #f7f7f5;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: #f7f7f5;
+    color: #171717;
+    font-family: var(--font-sans);
+    letter-spacing: -0.006em;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+  }
+
+  /* Numerals line up in tables, stats and calendar cells */
+  table {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid #6d28d9;
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  ::selection {
+    background: #ddd1fe;
+    color: #2c1258;
+  }
 }
 
-#root {
-  width: 100%;
-  min-height: 100vh;
+@layer components {
+  /* ---------- Shared page shell ----------
+     Full-bleed background, centered content, identical gutters. */
+  .hs-page {
+    box-sizing: border-box;
+    width: 100%;
+    margin-inline: auto;
+    padding: var(--hs-page-pad);
+    padding-inline: max(
+      var(--hs-gutter),
+      calc((100% - var(--hs-content-max)) / 2)
+    );
+  }
+
+  .hs-page--narrow {
+    --hs-content-max: 1080px;
+  }
+
+  .hs-page--wide {
+    --hs-content-max: 1600px;
+  }
+
+  /* Same gutters as .hs-page but full-bleed: for bars and headers that
+     must line up with the content column below them. */
+  .hs-shell-pad {
+    box-sizing: border-box;
+    width: 100%;
+    padding-inline: max(
+      var(--hs-gutter),
+      calc((100% - var(--hs-content-max)) / 2)
+    );
+  }
+
+  /* ---------- Bento primitives ---------- */
+  .hs-card {
+    position: relative;
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 18px 20px;
+    border: 1px solid var(--hs-border);
+    border-radius: var(--radius-card);
+    background: #ffffff;
+    box-shadow: var(--hs-shadow-card);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .hs-card--flush {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .hs-card--interactive:hover {
+    border-color: rgba(109, 40, 217, 0.28);
+    box-shadow: var(--hs-shadow-card-hover);
+    transform: translateY(-2px);
+  }
+
+  .hs-kicker {
+    font-family: var(--font-label);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #8b87a3;
+  }
+
+  .hs-num {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hs-stat-value {
+    font-family: var(--font-data);
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #171717;
+  }
+
+  .hs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 15px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-label);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease,
+      color 0.18s ease, transform 0.18s ease;
+  }
+
+  .hs-btn--primary {
+    background: #6d28d9;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(109, 40, 217, 0.22);
+  }
+
+  .hs-btn--primary:hover {
+    background: #5b21b6;
+    transform: translateY(-1px);
+  }
+
+  .hs-btn--ghost {
+    background: #ffffff;
+    border-color: var(--hs-border);
+    color: #3f3f46;
+  }
+
+  .hs-btn--ghost:hover {
+    border-color: rgba(109, 40, 217, 0.35);
+    color: #4c1d95;
+  }
+
+  .hs-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .hs-field {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--hs-border-strong);
+    border-radius: var(--radius-md);
+    background: #fbfbfc;
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease,
+      background 0.18s ease;
+  }
+
+  .hs-field:focus {
+    border-color: #a78bfa;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(109, 40, 217, 0.12);
+    outline: none;
+  }
+
+  .hs-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--hs-border);
+    border-radius: var(--radius-pill);
+    background: #ffffff;
+    font-family: var(--font-label);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b6880;
+    white-space: nowrap;
+  }
+
+  /* ---------- Loading ---------- */
+  .app-loading {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: #f7f7f5;
+    color: #6b6880;
+    font-family: var(--font-label);
+    font-size: 0.875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .loading-spinner {
+    width: 34px;
+    height: 34px;
+    border: 3px solid rgba(109, 40, 217, 0.18);
+    border-top-color: #6d28d9;
+    border-radius: 50%;
+    animation: hs-spin 0.75s linear infinite;
+  }
 }
 
-/* FullCalendar Dark Mode Overrides */
+@keyframes hs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   FULLCALENDAR BASE - replaces the old dark-mode overrides that
+   painted near-white day numbers on a white card.
+   ========================================================= */
+
 .fc {
-  --fc-page-bg-color: transparent;
-  --fc-neutral-bg-color: #1f2937;
-  --fc-neutral-text-color: #9ca3af;
-  --fc-border-color: #374151;
-
-  --fc-button-text-color: #fff;
-  --fc-button-bg-color: #2563eb;
-  --fc-button-border-color: #2563eb;
-  --fc-button-hover-bg-color: #1d4ed8;
-  --fc-button-hover-border-color: #1d4ed8;
-  --fc-button-active-bg-color: #1e40af;
-  --fc-button-active-border-color: #1e40af;
-
-  --fc-event-bg-color: #3b82f6;
-  --fc-event-border-color: #2563eb;
-  --fc-event-text-color: #fff;
-  --fc-event-selected-overlay-color: rgba(0, 0, 0, 0.25);
-
-  --fc-today-bg-color: rgba(59, 130, 246, 0.1);
-  --fc-now-indicator-color: #ef4444;
+  color: #26262b;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
 }
 
-.fc-theme-standard td,
-.fc-theme-standard th {
-  border-color: var(--fc-border-color);
-}
-
-.fc-theme-standard .fc-scrollgrid {
-  border-color: var(--fc-border-color);
+.fc .fc-scrollgrid {
+  border-color: var(--hs-border);
 }
 
 .fc .fc-col-header-cell-cushion,
-.fc .fc-daygrid-day-number {
-  color: #e5e7eb;
+.fc .fc-daygrid-day-number,
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-list-day-text,
+.fc .fc-list-day-side-text {
+  color: #3f3f46;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.fc .fc-col-header-cell {
+  background: #fafafc;
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fc .fc-day-other .fc-daygrid-day-number,
+.fc .fc-day-other .fc-daygrid-day-top {
+  opacity: 0.42;
+}
+
+.fc .fc-day-today {
+  background: #f6f2ff;
+}
+
+.fc .fc-highlight {
+  background: rgba(109, 40, 217, 0.1);
+}
+
+.fc .fc-toolbar-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.fc .fc-button {
+  box-shadow: none;
+  font-family: var(--font-label);
+  letter-spacing: 0.02em;
+}
+
+.fc .fc-button-primary {
+  background: #ffffff;
+  border: 1px solid var(--hs-border);
+  color: #3f3f46;
+}
+
+.fc .fc-button-primary:hover {
+  background: #faf5ff;
+  border-color: rgba(109, 40, 217, 0.35);
+  color: #4c1d95;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background: #6d28d9;
+  border-color: #6d28d9;
+  color: #ffffff;
+}
+
+.fc .fc-button:disabled {
+  opacity: 0.4;
+}
+
+.fc .fc-license-message {
+  display: none;
+}
+
+.fc .fc-list {
+  border-color: var(--hs-border);
+}
+
+.fc .fc-list-event:hover td {
+  background: #faf5ff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
 }

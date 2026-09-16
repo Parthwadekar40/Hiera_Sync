@@ -57,3 +57,6 @@ firebase-credentials.json
 
 # Environment variables
 .env
+
+# Local env (never commit secrets)
+backend/.env

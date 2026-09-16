@@ -85,6 +85,17 @@ export interface DepartmentReportSummary {
   completion_rate: string;
 }
 
+export type ActivityType =
+  | 'Academic'
+  | 'Meeting'
+  | 'Workshop'
+  | 'Department Activity'
+  | 'Research';
+
+export type ActivityStatus = 'Planned' | 'Assigned' | 'Review' | 'Completed';
+
+export type ActivityPriority = 'Low' | 'Medium' | 'High';
+
 export interface EventCreate {
   title: string;
   date: string;
@@ -92,6 +103,13 @@ export interface EventCreate {
   person: string;
   description?: string;
   location?: string;
+  status?: ActivityStatus;
+  priority?: ActivityPriority;
+  start_time?: string;
+  end_time?: string;
+  all_day?: boolean;
+  /** Ask the API to notify the assigned faculty about this activity. */
+  notify_assignee?: boolean;
 }
 
 export interface EventUpdate {
@@ -101,6 +119,11 @@ export interface EventUpdate {
   person?: string;
   description?: string;
   location?: string;
+  status?: ActivityStatus;
+  priority?: ActivityPriority;
+  start_time?: string;
+  end_time?: string;
+  all_day?: boolean;
 }
 
 export interface EventResponse extends EventCreate {

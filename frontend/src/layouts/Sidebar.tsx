@@ -124,45 +124,45 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-72 min-h-screen bg-[#17151F] text-[#D4D4D8] p-6 flex flex-col justify-between shadow-2xl border-r border-[#262335] shrink-0 font-sans">
+    <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col justify-between overflow-y-auto border-r border-[#262335] bg-[#17151F] p-5 font-label text-[#D4D4D8] shadow-2xl">
       <div>
         {/* Brand Header */}
-        <div className="flex items-center gap-3.5 mb-8 pb-6 border-b border-[#262335]">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#6D28D9] to-[#9333EA] p-0.5 shadow-lg shadow-[#6D28D9]/25">
-            <div className="w-full h-full bg-[#17151F] rounded-[10px] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-[#C4B5FD]" />
+        <div className="mb-7 flex items-center gap-3 border-b border-[#262335] pb-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-brand-plum to-[#9333EA] p-0.5 shadow-lg shadow-brand-plum/25">
+            <div className="flex h-full w-full items-center justify-center rounded-[7px] bg-[#17151F]">
+              <Sparkles className="h-5 w-5 text-[#C4B5FD]" />
             </div>
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-white tracking-wider">
-              HIÉRASYNC <span className="text-[#A78BFA] font-black">AI</span>
+          <div className="min-w-0">
+            <h1 className="truncate font-display text-[17px] font-semibold tracking-wide text-white">
+              HiéraSync <span className="text-[#A78BFA]">AI</span>
             </h1>
-            <p className="text-[11px] text-[#A1A1AA] font-medium tracking-wide">AIML Department Portal</p>
+            <p className="hs-kicker mt-0.5 truncate text-[#8B87A3]">AIML Department Portal</p>
           </div>
         </div>
 
         {/* Menu Navigation */}
-        <nav>
+        <nav aria-label="Primary">
           <ul className="space-y-1">
-            {menu.map((item, index) => (
-              <li key={index}>
+            {menu.map((item) => (
+              <li key={item.path}>
                 <NavLink
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                    `flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ${
                       isActive
-                        ? "bg-[#6D28D9] text-white shadow-md shadow-[#6D28D9]/30 font-semibold"
+                        ? "bg-brand-plum font-semibold text-white shadow-md shadow-brand-plum/30"
                         : "text-[#A1A1AA] hover:bg-[#232030] hover:text-white"
                     }`
                   }
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="w-5 h-5 flex items-center justify-center shrink-0">{item.icon}</span>
-                    <span>{item.name}</span>
-                  </div>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
+                    <span className="truncate">{item.name}</span>
+                  </span>
 
                   {item.badge && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#242033] text-[#C4B5FD] border border-[#38334E]">
+                    <span className="ml-2 shrink-0 rounded-sm border border-[#38334E] bg-[#242033] px-1.5 py-px text-[11px] font-semibold text-[#C4B5FD]">
                       {item.badge}
                     </span>
                   )}
@@ -174,7 +174,7 @@ export default function Sidebar() {
       </div>
 
       {/* Footer Info */}
-      <div className="pt-5 border-t border-[#262335] text-xs text-[#71717A]">
+      <div className="mt-6 border-t border-[#262335] pt-4 text-xs text-[#71717A]">
         <p className="font-semibold text-[#A1A1AA]">SBJIT Nagpur • AIML</p>
         <p className="mt-0.5 text-[11px]">System v2.4 • Active Session</p>
       </div>
