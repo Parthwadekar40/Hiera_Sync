@@ -28,6 +28,71 @@ task workflow, the faculty activity calendar, approvals, AI insights and progres
 cd backend && python scripts/seed_demo.py --password Hiera@2026   # faculty + a month of activities
 ```
 
+## Quick Start (no Firebase needed)
+
+Prerequisites: **Node.js 20.19+ or 22 LTS** (`node -v`) and **Python 3.10–3.12** (`python --version`).
+Vite 8 refuses older Node versions, so upgrade before you start.
+
+**Windows PowerShell**
+
+```powershell
+git clone https://github.com/Parthwadekar40/Hiera_Sync.git
+cd Hiera_Sync\backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --port 8000      # terminal 1
+```
+
+```powershell
+cd ..\frontend
+npm install
+npm run dev                                               # terminal 2
+```
+
+**macOS / Linux**
+
+```bash
+git clone https://github.com/Parthwadekar40/Hiera_Sync.git
+cd Hiera_Sync/backend
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --port 8000       # terminal 1
+```
+
+```bash
+cd ../frontend
+npm install
+npm run dev                                               # terminal 2
+```
+
+Then seed some data (third terminal, from `backend/`, keep the API running):
+
+```bash
+python scripts/seed_demo.py --password Hiera@2026
+```
+
+Open **http://localhost:5173** and sign in with `hod@sbjit.edu.in` / `Hiera@2026`
+(faculty accounts use the same password: `neha@`, `sweta@`, `preeti@`, `bhushan@sbjit.edu.in`).
+
+What to look at:
+
+| Page | What should happen |
+| --- | --- |
+| `/calendar` | Month grid with activities, today highlighted, day agenda on the right, filters + ICS/CSV export, drag an activity to another day (it persists), **Manage → Heat view**, and the create/edit drawer warns about double bookings. |
+| `/approvals` | Decision queue with tabs, the "Suggested order" strip, Approve / Send-back with a note, New Request modal. Sign in as a faculty account to see the read-only variant. |
+| `/notifications` | The reminders the API queued for the assignee, plus the AI digest button. |
+| `/reports` | Charts, CSV export of the current filters. |
+| `/` (landing) | The new type pairing — Roboto Slab display over Manrope body. |
+
+No `firebase-credentials.json`? The API boots in **demo mode**: an in-memory database, sample
+activities seeded on first read, accounts activated immediately. Check `http://127.0.0.1:8000/health`
+— it answers `{"database": "memory (volatile demo data)"}`. Data resets when the API restarts
+(`--reload` restarts on every backend file change, so re-run the seed script after editing the backend).
+
+To use real Firestore instead, follow **Setup Instructions → Firebase Setup** below; the app switches
+over as soon as `backend/firebase-credentials.json` exists and `FIREBASE_PROJECT_ID` matches.
+
 ## Design System
 
 All shared visual decisions live in `frontend/src/index.css`; page stylesheets consume the tokens
@@ -94,9 +159,10 @@ server proxies `/api/v1` to `http://127.0.0.1:8000`, so nothing is required loca
 
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000             # demo mode works without credentials
+python -m uvicorn app.main:app --reload --port 8000   # demo mode works without credentials
+python scripts/seed_demo.py --password Hiera@2026     # optional: a full department of data
 ```
 
 The calendar page can also be driven end to end without a Firebase project: register a HOD account,
