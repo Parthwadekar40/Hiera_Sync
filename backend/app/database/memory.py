@@ -23,8 +23,13 @@ CollectionData = Dict[str, Dict[str, Any]]
 def _matches(document: Dict[str, Any], field: str, op: str, value: Any) -> bool:
     actual = document.get(field)
     try:
-        if op in ("==", "in"):
-            return actual in value if op == "in" else actual == value
+        if op == "==":
+            return actual == value
+        if op in ("in", "not_in"):
+            contained = actual in (value or [])
+            return contained if op == "in" else not contained
+        if op == "array_contains_any":
+            return bool(set(actual or []) & set(value or []))
         if op == "!=":
             return actual != value
         if actual is None:
@@ -66,6 +71,11 @@ class MemoryDocumentSnapshot:
     def to_dict(self) -> Dict[str, Any]:
         return dict(self._data) if self._data else {}
 
+    def get(self, field: str, default: Any = None) -> Any:
+        if self._data is None:
+            return default
+        return self._data.get(field, default)
+
 
 class MemoryDocument:
     __slots__ = ("_collection", "_doc_id")
@@ -104,7 +114,19 @@ class MemoryQuery:
         self._order = order
         self._limit = limit_
 
-    def where(self, field: str, op: str, value: Any) -> "MemoryQuery":
+    def where(self, field: Optional[str] = None, op: Optional[str] = None,
+              value: Any = None, *, filter: Any = None) -> "MemoryQuery":
+        """Accepts both call styles the routers use:
+
+            .where("email", "==", value)
+            .where(filter=FieldFilter("email", "==", value))
+        """
+        if filter is not None:
+            field = getattr(filter, "field_path", None) or getattr(filter, "field", None)
+            op = getattr(filter, "op_string", None) or getattr(filter, "op", None)
+            value = getattr(filter, "value", None)
+        if field is None or op is None:
+            raise TypeError("MemoryQuery.where() needs (field, op, value) or filter=FieldFilter(...)")
         return MemoryQuery(
             self._collection, self._filters + [(field, op, value)], self._order, self._limit
         )

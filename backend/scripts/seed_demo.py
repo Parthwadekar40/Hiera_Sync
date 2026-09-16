@@ -88,12 +88,19 @@ def main() -> int:
     parser.add_argument("--api-base", default="http://127.0.0.1:8000/api/v1")
     parser.add_argument("--password", default=None,
                         help="shared password for the seeded accounts (prompted if omitted)")
+    parser.add_argument("--only-admin", action="store_true",
+                        help="just the HOD account - use this against a real Firebase project "
+                             "so the other four Auth users are not created")
     args = parser.parse_args()
     base = args.api_base.rstrip("/")
     password = args.password or getpass.getpass("Password for the seeded accounts: ")
 
+    users = DEFAULT_USERS[:1] if args.only_admin else DEFAULT_USERS
+    if args.only_admin:
+        print("Seeding one account only (--only-admin).")
+
     tokens = {}
-    for user in DEFAULT_USERS:
+    for user in users:
         status, _ = call(base, "POST", "/auth/register", {**user, "password": password,
                                                           "department_id": "AIML"})
         note = "created" if status in (200, 201) else f"reused ({status})"
@@ -110,6 +117,20 @@ def main() -> int:
         return 1
 
     hod_token = tokens.get(DEFAULT_USERS[0]["name"]) or next(iter(tokens.values()))
+
+    # With real Firebase credentials a fresh profile is PENDING, and a PENDING
+    # account cannot be approved by anyone until a department exists. Creating the
+    # department is the bootstrap: it claims the code and activates the creator.
+    me_status, me = call(base, "GET", "/auth/me", token=hod_token)
+    if me_status == 200 and me.get("status") != "ACTIVE":
+        dept_status, dept = call(base, "POST", "/departments",
+                                {"name": "CSE (Artificial Intelligence & Machine Learning)"},
+                                token=hod_token)
+        if dept_status in (200, 201):
+            print(f"  department created - invite code {dept.get('code')} "
+                  f"(others use it on /join-department)")
+        else:
+            print(f"  ! could not create the department: {dept.get('detail')}")
 
     _, existing_events = call(base, "GET", "/events", token=hod_token)
     # key on title + date so a same-titled activity on another day can still be added

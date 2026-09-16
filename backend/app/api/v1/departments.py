@@ -19,16 +19,28 @@ def generate_invitation_code(length=8):
 def create_department(
     dept_in: DepartmentCreate,
     db: Client = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ):
-    if current_user.role not in [RoleEnum.ADMIN, RoleEnum.HOD]:
-        raise HTTPException(status_code=403, detail="Only Admins or HODs can create departments")
-    
-    # Check if admin already has a department
     departments_ref = db.collection('departments')
-    query = departments_ref.where(filter=FieldFilter('hod_id', '==', current_user.id)).stream()
-    if list(query):
-        raise HTTPException(status_code=400, detail="You already manage a department")
+    existing = list(departments_ref.stream())
+
+    # Bootstrap case: an empty database has no active HOD, and only an active HOD
+    # can approve anyone - so nobody could ever get the app started. The first
+    # department may therefore be claimed by whoever registers it, even while that
+    # account is still PENDING, and the claimer is activated by doing it.
+    is_bootstrap = len(existing) == 0
+
+    if not is_bootstrap:
+        if current_user.status != "ACTIVE":
+            raise HTTPException(
+                status_code=403,
+                detail="Your account is waiting for department approval before it can create one",
+            )
+        if current_user.role not in [RoleEnum.ADMIN, RoleEnum.HOD]:
+            raise HTTPException(status_code=403, detail="Only Admins or HODs can create departments")
+
+        if any(dept.to_dict().get("hod_id") == current_user.id for dept in existing):
+            raise HTTPException(status_code=400, detail="You already manage a department")
 
     # Generate unique code
     while True:
@@ -47,13 +59,16 @@ def create_department(
     
     departments_ref.document(dept_id).set(dept_data)
 
-    # Update user's department ID if they don't have one
-    if not current_user.department_id:
-        db.collection('users').document(current_user.id).update({
-            "department_id": dept_id
-        })
+    # Link the creator to the department they just made. This used to be guarded
+    # by "if not current_user.department_id", but registration always writes a
+    # placeholder ("AIML"), so the link never happened and /departments/me stayed
+    # empty - the page reported success while the account pointed at nothing.
+    user_patch = {"department_id": dept_id}
+    if is_bootstrap:
+        user_patch["status"] = "ACTIVE"
+    db.collection('users').document(current_user.id).set(user_patch, merge=True)
 
-    return dept_data
+    return {**dept_data, "bootstrap": is_bootstrap}
 
 @router.get("/me", response_model=Optional[DepartmentResponse])
 def get_my_department(

@@ -85,6 +85,7 @@ def login(login_in: LoginRequest, db: Client = Depends(get_db)):
     users = list(query)
     
     if not users:
+        logger.info(f"Login failed: no profile in the 'users' collection for {login_in.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -92,8 +93,32 @@ def login(login_in: LoginRequest, db: Client = Depends(get_db)):
         )
     
     user_doc = users[0].to_dict()
-    
-    if not verify_password(login_in.password, user_doc.get("hashed_password", "")):
+
+    stored_hash = user_doc.get("hashed_password") or ""
+    if not stored_hash:
+        # The profile exists in Firestore but carries no password: typical for an
+        # account created in the Firebase console, which never touches this
+        # collection. Login only compares the stored bcrypt hash, so say so.
+        logger.warning(
+            f"Login for {login_in.email}: profile has no hashed_password (created outside /auth/register?)"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This account has no password on file in the department database. "
+                   "Sign up on the register page (or ask the HOD to re-create it) so the "
+                   "profile and the password are stored together.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        password_ok = verify_password(login_in.password, stored_hash)
+    except ValueError:
+        # bcrypt raises instead of returning False when the stored value is not a
+        # hash at all (plain text pasted into the console) - that was a 500.
+        logger.warning(f"Login for {login_in.email}: stored password hash is malformed")
+        password_ok = False
+
+    if not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

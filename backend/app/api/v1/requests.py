@@ -12,6 +12,25 @@ from app.api.v1.tasks import create_task
 
 router = APIRouter()
 
+REVIEW_ROLES = [RoleEnum.ADMIN, RoleEnum.HOD]
+
+
+def _task_from_request(req_data: dict, overrides: dict, current_user: User) -> TaskCreate:
+    """Build the task an approved request turns into."""
+    payload = {
+        "title": req_data.get("title", "Untitled request"),
+        "assigned": req_data.get("requester_name") or current_user.name,
+        "assigned_id": req_data.get("requester_id"),
+        "deadline": req_data.get("suggested_deadline") or datetime.utcnow().date().isoformat(),
+        "priority": req_data.get("priority") or "Medium",
+        "status": "Pending",
+        "description": req_data.get("description"),
+        "category": req_data.get("category") or "General",
+        "estimated_effort": req_data.get("estimated_effort"),
+    }
+    payload.update({key: value for key, value in (overrides or {}).items() if value is not None})
+    return TaskCreate(**payload)
+
 @router.post("", response_model=TaskRequestResponse)
 def create_task_request(
     request: TaskRequestCreate,
@@ -52,8 +71,8 @@ def get_task_requests(
     current_user: User = Depends(get_current_active_user)
 ):
     requests_ref = db.collection('task_requests')
-    if current_user.role == RoleEnum.FACULTY:
-        # Teachers see their own requests
+    if current_user.role not in REVIEW_ROLES:
+        # Everyone else only sees the requests they raised
         docs = list(requests_ref.where('requester_id', '==', current_user.id).stream())
     else:
         # HODs see all
@@ -74,24 +93,34 @@ def approve_task_request(
         raise HTTPException(status_code=404, detail="Task Request not found")
         
     req_data = doc.to_dict()
-    if req_data['status'] != "PENDING":
+    if req_data.get("status") != "PENDING":
         raise HTTPException(status_code=400, detail=f"Cannot approve request with status {req_data['status']}")
         
-    # We create the task via tasks.py logic or manually here. 
-    # The frontend will prefill the Create Task form and send us the final task object.
-    # But wait, the simplest way is to manually do what `create_task` does here, or the frontend 
-    # just calls `/tasks` directly and then calls `/task-requests/{req_id}` with PATCH to mark approved.
-    # The prompt specifically says "When HOD clicks [Approve & Create Task]... Open the existing Create Task form with the request information pre-filled. After HOD confirms task creation: 1. Create the actual Task... 2. Set TaskRequest.status = APPROVED..."
-    
-    # So the HOD workflow will be:
-    # 1. HOD clicks Approve
-    # 2. Frontend opens modal prefilled
-    # 3. Frontend POST /tasks (creates task)
-    # 4. Frontend PATCH /task-requests/{req_id} { status: 'APPROVED', created_task_id: '...' }
-    # Let's provide a PATCH route to handle this cleanly.
-    raise HTTPException(status_code=400, detail="Use PATCH /task-requests/{req_id} instead")
+    # Optional override of the task that gets created (title/assignee/deadline...);
+    # anything the reviewer does not send is taken from the request itself.
+    task = _task_from_request(req_data, task_data or {}, current_user)
+    created = create_task(task, db, current_user)
 
-@router.patch("/{req_id}", response_model=TaskRequestResponse)
+    doc_ref.update({
+        "status": "APPROVED",
+        "reviewed_at": datetime.utcnow().isoformat(),
+        "reviewed_by": current_user.id,
+        "created_task_id": created["id"],
+    })
+    trigger_notification(
+        db,
+        req_data.get("requester_id") or "department",
+        "REQUEST APPROVED",
+        "Task Request Approved",
+        f"Your request '{req_data.get('title')}' was approved and a task was created.",
+        "/tasks",
+        "Medium",
+        "✅",
+    )
+    return {"message": "Request approved", "task_id": created["id"],
+            "request_id": req_id, "status": "APPROVED"}
+
+@router.api_route("/{req_id}", methods=["PATCH", "PUT"], response_model=TaskRequestResponse)
 def update_task_request(
     req_id: str,
     update_data: TaskRequestUpdate,
@@ -104,17 +133,17 @@ def update_task_request(
         raise HTTPException(status_code=404, detail="Task Request not found")
         
     req_data = doc.to_dict()
-    
-    # Enforce RBAC
-    if current_user.role == RoleEnum.FACULTY:
-        if req_data['requester_id'] != current_user.id:
+
+    # Enforce RBAC: only the HOD desk decides; requesters may withdraw their own.
+    is_reviewer = current_user.role in REVIEW_ROLES
+    if not is_reviewer:
+        if req_data.get('requester_id') != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to modify this request")
         # Teachers can only cancel their pending requests
         if update_data.status not in [None, "CANCELLED"]:
-             raise HTTPException(status_code=403, detail="Teachers can only cancel requests")
-    else:
-        # HOD can approve or reject
-        pass
+             raise HTTPException(status_code=403, detail="Only the HOD desk can approve or reject a request")
+        if req_data.get("status") != "PENDING":
+            raise HTTPException(status_code=400, detail="Only a pending request can be cancelled")
         
     update_dict = {k: v for k, v in update_data.dict(exclude_unset=True).items() if v is not None}
     
@@ -124,15 +153,34 @@ def update_task_request(
         
         # Notifications
         if update_dict["status"] == "APPROVED":
+            # Approving has to produce the task - the notification claimed a task
+            # was created, but nothing ever created one unless the client called
+            # /tasks itself first.
+            if not update_dict.get("created_task_id") and not req_data.get("created_task_id"):
+                task = _task_from_request(req_data, {}, current_user)
+                created = create_task(task, db, current_user)
+                update_dict["created_task_id"] = created["id"]
+
             trigger_notification(
                 db, 
-                req_data['requester_id'], 
+                req_data.get('requester_id') or "department", 
                 "REQUEST APPROVED", 
                 "Task Request Approved", 
                 f"Your request '{req_data.get('title')}' was approved and a task was created.", 
                 "/tasks",
                 "Medium",
                 "✅"
+            )
+        elif update_dict["status"] == "CANCELLED":
+            trigger_notification(
+                db,
+                "department",
+                "REQUEST WITHDRAWN",
+                "Task Request Cancelled",
+                f"{req_data.get('requester_name')} withdrew the request '{req_data.get('title')}'.",
+                "/task-requests",
+                "Low",
+                "🚫"
             )
         elif update_dict["status"] == "REJECTED":
             reason = update_dict.get("rejection_reason", "No reason provided.")
