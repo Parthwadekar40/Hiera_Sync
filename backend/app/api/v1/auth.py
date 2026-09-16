@@ -13,12 +13,27 @@ from app.auth.jwt import create_access_token
 from app.auth.permissions import get_current_active_user, get_current_user, check_role
 from datetime import timedelta
 from app.config.settings import settings
+import uuid
+
 import firebase_admin
 from firebase_admin import auth as firebase_auth
+from app.database import session as db_session
+from app.utils.logging import logger
 from google.cloud.firestore import Client
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 router = APIRouter()
+
+
+def _demo_mode() -> bool:
+    """True while running on the in-memory database (no Firebase credentials).
+
+    Firebase Auth is the identity provider in production, but it is unavailable
+    without a service-account file. In demo mode the local password hash in the
+    users collection is the only credential, so accounts are minted with a
+    synthetic id and activated straight away - enough to exercise the workflow.
+    """
+    return db_session.is_memory_db()
 
 @router.post("/register", response_model=UserResponse)
 def register(user_in: UserCreate, db: Client = Depends(get_db)):
@@ -27,19 +42,26 @@ def register(user_in: UserCreate, db: Client = Depends(get_db)):
     if list(query):
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    try:
-        fb_user = firebase_auth.create_user(
-            email=user_in.email,
-            password=user_in.password,
-            display_name=user_in.name
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    if _demo_mode():
+        new_id = f"demo_{uuid.uuid4().hex[:12]}"
+        status_value = "ACTIVE"
+        logger.warning(f"Demo mode: created account {new_id} without Firebase Auth.")
+    else:
+        try:
+            fb_user = firebase_auth.create_user(
+                email=user_in.email,
+                password=user_in.password,
+                display_name=user_in.name
+            )
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        new_id = fb_user.uid
+        status_value = "PENDING"
 
     hashed_password = get_password_hash(user_in.password)
     
     user_data = {
-        "id": fb_user.uid,
+        "id": new_id,
         "name": user_in.name,
         "email": user_in.email,
         "hashed_password": hashed_password,
@@ -50,10 +72,10 @@ def register(user_in: UserCreate, db: Client = Depends(get_db)):
         "joining_date": user_in.joining_date or "Not Available",
         "association": user_in.association or "Regular",
         "avatar_url": user_in.avatar_url,
-        "status": "PENDING"
+        "status": status_value
     }
-    
-    users_ref.document(fb_user.uid).set(user_data)
+
+    users_ref.document(new_id).set(user_data)
     return user_data
 
 @router.post("/login", response_model=LoginResponse)
@@ -128,6 +150,12 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 @router.post("/forgot-password")
 def forgot_password(req: ForgotPasswordRequest):
+    if _demo_mode():
+        return {
+            "message": "Password resets are unavailable while the app runs on the in-memory "
+                       "demo database — email a link once Firebase credentials are configured.",
+            "link": None,
+        }
     try:
         link = firebase_auth.generate_password_reset_link(req.email)
         return {"message": "Password reset email generated", "link": link}
@@ -180,18 +208,22 @@ def create_employee(
         raise HTTPException(status_code=400, detail="Email already exists")
     
     pwd = employee_in.password or "Sbjit@123"
-    try:
-        fb_user = firebase_auth.create_user(
-            email=employee_in.email,
-            password=pwd,
-            display_name=employee_in.name
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    if _demo_mode():
+        new_id = f"demo_{uuid.uuid4().hex[:12]}"
+    else:
+        try:
+            fb_user = firebase_auth.create_user(
+                email=employee_in.email,
+                password=pwd,
+                display_name=employee_in.name
+            )
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        new_id = fb_user.uid
 
     hashed_password = get_password_hash(pwd)
     data = {
-        "id": fb_user.uid,
+        "id": new_id,
         "name": employee_in.name,
         "email": employee_in.email,
         "hashed_password": hashed_password,
@@ -204,7 +236,7 @@ def create_employee(
         "avatar_url": employee_in.avatar_url,
         "status": "ACTIVE"
     }
-    db.collection('users').document(fb_user.uid).set(data)
+    db.collection('users').document(new_id).set(data)
     return data
 
 @router.put("/employees/{employee_id}", response_model=EmployeeResponse)

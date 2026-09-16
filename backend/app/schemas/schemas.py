@@ -169,7 +169,12 @@ class EventUpdate(BaseModel):
 
 
 class EventResponse(EventCreate):
+    # Legacy activity documents may predate some of these fields; defaults keep
+    # the collection readable instead of failing the response model.
     id: str
+    title: str = "Untitled activity"
+    date: str = ""
+    person: str = ""
     creator_id: Optional[str] = "admin"
     created_at: Optional[str] = None
 
@@ -349,7 +354,12 @@ class ApprovalUpdate(BaseModel):
     comments: Optional[str] = None
 
 class ApprovalResponse(ApprovalCreate):
+    # Documents written before these fields existed must still serialise, so the
+    # response model tolerates them instead of failing the whole list.
     id: str
+    title: str = "Untitled request"
+    requested: str = ""
+    assigned: str = ""
     reviewed_at: Optional[str] = None
     created_at: Optional[str] = None
 

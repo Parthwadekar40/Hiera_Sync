@@ -228,7 +228,7 @@
   gap: 12px;
   padding: 6px 14px 6px 6px;
   border: 1px solid rgba(23, 35, 60, 0.10);
-  border-radius: var(--radius-hero);
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.80);
   backdrop-filter: blur(8px);
   box-shadow: var(--hs-lp-shadow-sm);
@@ -237,7 +237,7 @@
 
 .hs-college-badge {
   padding: 3px 8px;
-  border-radius: var(--radius-hero);
+  border-radius: var(--radius-pill);
   background: var(--hs-lp-navy);
   color: #FFFFFF;
   font-size: 9.5px;

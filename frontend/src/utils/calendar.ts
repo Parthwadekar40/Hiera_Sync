@@ -159,10 +159,37 @@ const icsDate = (iso: string, time?: string, allDay = true) => {
   return match ? `${compact}T${pad(Number(match[1]))}${match[2]}00` : compact;
 };
 
+/** RFC 5545: no line may be longer than 75 octets - longer ones are folded
+ *  with a CRLF plus a single space. Descriptions get long in real semesters. */
+export function foldICSLine(line: string, limit = 74): string {
+  if (line.length <= limit + 1) return line;
+  const out: string[] = [line.slice(0, limit)];
+  let rest = line.slice(limit);
+  while (rest.length > limit) {
+    out.push(` ${rest.slice(0, limit)}`);
+    rest = rest.slice(limit);
+  }
+  if (rest) out.push(` ${rest}`);
+  return out.join("\r\n");
+}
+
+/** Whole-day DTEND must be exclusive (the day after), or strict clients show a
+ *  zero-length event. */
+export function nextDayISO(iso: string): string {
+  const key = toISODate(iso);
+  if (!key) return "";
+  const [y, m, d] = key.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + 1);
+  return dayKey(date);
+}
+
 export interface IcsEvent {
   id: string | number;
   title: string;
   date: string;
+  person?: string;
+  type?: string;
   start_time?: string;
   end_time?: string;
   location?: string;
@@ -172,7 +199,7 @@ export interface IcsEvent {
 
 /** Build a downloadable .ics feed client-side - no backend needed. */
 export function buildICS(events: IcsEvent[], productId = "hiera-sync"): string {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 
   const lines = [
     "BEGIN:VCALENDAR",
@@ -184,21 +211,33 @@ export function buildICS(events: IcsEvent[], productId = "hiera-sync"): string {
 
   events.forEach((event) => {
     const allDay = event.all_day !== false && !event.start_time;
+    const start = icsDate(event.date, event.start_time, allDay);
+    const end = allDay
+      ? nextDayISO(event.date)
+      : icsDate(event.date, event.end_time || event.start_time, false);
+
     lines.push(
       "BEGIN:VEVENT",
       `UID:${event.id}@${productId}`,
-      `DTSTAMP:${stamp}Z`,
-      `DTSTART:${icsDate(event.date, event.start_time, allDay)}`,
-      `DTEND:${icsDate(event.date, event.end_time, allDay)}`,
-      `SUMMARY:${icsEscape(event.title)}`
+      `DTSTAMP:${stamp}`,
+      allDay ? `DTSTART;VALUE=DATE:${start}` : `DTSTART:${start}`,
+      allDay ? `DTEND;VALUE=DATE:${end.replace(/-/g, "")}` : `DTEND:${end}`,
+      `SUMMARY:${icsEscape(event.title)}`,
+      `DESCRIPTION:${icsEscape(
+        [event.description, event.person ? `Owner: ${event.person}` : "", event.type ? `Type: ${event.type}` : ""]
+          .filter(Boolean)
+          .join(" · ")
+      )}`,
+      event.location ? `LOCATION:${icsEscape(event.location)}` : ""
     );
-    if (event.location) lines.push(`LOCATION:${icsEscape(event.location)}`);
-    if (event.description) lines.push(`DESCRIPTION:${icsEscape(event.description)}`);
     lines.push("END:VEVENT");
   });
 
   lines.push("END:VCALENDAR");
-  return lines.join("\r\n");
+  return lines
+    .filter((line) => line !== "")
+    .map((line) => foldICSLine(line))
+    .join("\r\n");
 }
 
 const csvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;

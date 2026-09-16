@@ -18,6 +18,9 @@ task workflow, the faculty activity calendar, approvals, AI insights and progres
 - **Tasks, Goals, Reports, Notifications and an AI assistant** for the day-to-day HOD/faculty loop.
 - **Offline-safe UI** — when the API is unreachable, the calendar and approvals desk fall back to
   a local preview dataset (marked in the banner) so the pages can still be reviewed.
+- **Demo mode** — if `firebase-credentials.json` is missing or unreachable, the API boots on a
+  process-local in-memory database (registered accounts are activated immediately, sample
+  activities and approvals are seeded on first read). `GET /health` reports which mode is live.
 
 ## Design System
 
@@ -87,11 +90,16 @@ server proxies `/api/v1` to `http://127.0.0.1:8000`, so nothing is required loca
 cd backend
 python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000             # demo mode works without credentials
 ```
 
-Interactive API docs: <http://127.0.0.1:8000/docs>. Without credentials the service still boots
-and serves the API from in-memory sample data (`FIREBASE_AVAILABLE=false`).
+The calendar page can also be driven end to end without a Firebase project: register a HOD account,
+then create, drag, filter and export activities; the data simply does not survive a restart.
+
+Interactive API docs: <http://127.0.0.1:8000/docs>. Without credentials the service still boots:
+`app/database/memory.py` supplies a volatile Firestore double so registration, the calendar and the
+approvals queue all work — check `GET /health`, which answers
+`{"database": "memory (volatile demo data)"}` in that mode.
 
 ### Frontend Setup
 
@@ -100,7 +108,12 @@ cd frontend
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # type-check + production bundle
+npm run lint     # oxlint
+npm run test:utils   # calendar date/ICS/CSV helpers (Node >= 22.18, no extra deps)
 ```
+
+While the backend is not running, `/api/v1` requests fail and the pages switch to their bundled
+preview data instead of showing an empty grid.
 
 ## API Surface (department modules)
 
@@ -128,6 +141,7 @@ escalated once. See `backend/app/scheduler/jobs.py`.
 ```
 backend/
   app/api/v1/       route handlers (auth, users, events, tasks, approvals, ai, …)
+  app/database/     Firestore bootstrap + the in-memory demo double
   app/schemas/      Pydantic models, including the activity/approval contracts
   app/scheduler/    background reminder jobs
   app/utils/        shared helpers (dates, logging)

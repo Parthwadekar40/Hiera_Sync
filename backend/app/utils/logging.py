@@ -4,7 +4,7 @@ from app.config.settings import settings
 
 def setup_logger():
     # Avoid duplicate handlers
-    logger = logging.getLogger("campuspulse")
+    logger = logging.getLogger("hierasync")
     if not logger.hasHandlers():
         # Read log level from settings or default to INFO
         log_level = getattr(settings, "LOG_LEVEL", "INFO").upper()
