@@ -35,6 +35,11 @@ Vite 8 refuses older Node versions, so upgrade before you start.
 
 **Windows PowerShell**
 
+A Windows venv stores its scripts in `.venv\Scripts\`, not `.venv\bin\` — so the usual
+`source .venv/bin/activate` fails with *"No such file or directory"* in Git Bash. Activate with
+`.venv\Scripts\Activate.ps1` (PowerShell) or `source .venv/Scripts/activate` (Git Bash), or skip
+activation altogether and call the venv interpreter directly.
+
 ```powershell
 git clone https://github.com/Parthwadekar40/Hiera_Sync.git
 cd Hiera_Sync\backend
@@ -48,6 +53,15 @@ python -m uvicorn app.main:app --reload --port 8000      # terminal 1
 cd ..\frontend
 npm install
 npm run dev                                               # terminal 2
+```
+
+Same commands from **Git Bash**, where activation is optional:
+
+```bash
+python -m venv .venv
+source .venv/Scripts/activate                        # or skip it entirely:
+./.venv/Scripts/python.exe -m pip install -r requirements.txt
+./.venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
 **macOS / Linux**
