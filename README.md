@@ -19,8 +19,14 @@ task workflow, the faculty activity calendar, approvals, AI insights and progres
 - **Offline-safe UI** — when the API is unreachable, the calendar and approvals desk fall back to
   a local preview dataset (marked in the banner) so the pages can still be reviewed.
 - **Demo mode** — if `firebase-credentials.json` is missing or unreachable, the API boots on a
-  process-local in-memory database (registered accounts are activated immediately, sample
-  activities and approvals are seeded on first read). `GET /health` reports which mode is live.
+  process-local in-memory database (sample activities and approvals are seeded on first read, and
+  newly registered accounts are activated straight away instead of waiting on a join-request
+  approval — with real Firebase credentials the normal PENDING → HOD approval flow applies).
+  `GET /health` reports which mode is live.
+
+```bash
+cd backend && python scripts/seed_demo.py --password Hiera@2026   # faculty + a month of activities
+```
 
 ## Design System
 
@@ -119,6 +125,9 @@ preview data instead of showing an empty grid.
 
 | Method | Path | Notes |
 | --- | --- | --- |
+Collection endpoints answer on the bare path (`/api/v1/events`, not `/events/`), so a cross-origin
+preflight is never bounced through a redirect.
+
 | `GET` | `/api/v1/events` | supports `date_from`, `date_to`, `type`, `person` filters; seeds sample activities on an empty collection |
 | `POST` | `/api/v1/events` | HOD/Admin only; dates normalised to `YYYY-MM-DD`, `notify_assignee` queues a reminder notification |
 | `PUT` | `/api/v1/events/{id}` | HOD/Admin only; used by drag-and-drop rescheduling |

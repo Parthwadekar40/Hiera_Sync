@@ -15,7 +15,7 @@ router = APIRouter()
 def generate_invitation_code(length=8):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-@router.post("/", response_model=DepartmentResponse)
+@router.post("", response_model=DepartmentResponse)
 def create_department(
     dept_in: DepartmentCreate,
     db: Client = Depends(get_db),

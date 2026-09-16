@@ -97,7 +97,7 @@ def _notify_assignee(db: Client, event: dict, actor: User) -> None:
     db.collection("notifications").document(notification["id"]).set(notification)
 
 
-@router.get("/", response_model=List[EventResponse])
+@router.get("", response_model=List[EventResponse])
 def get_events(
     date_from: Optional[str] = Query(None, description="Inclusive ISO start date"),
     date_to: Optional[str] = Query(None, description="Inclusive ISO end date"),
@@ -136,7 +136,7 @@ def get_events(
     return events
 
 
-@router.post("/", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 def create_event(
     event: EventCreate,
     db: Client = Depends(get_db),

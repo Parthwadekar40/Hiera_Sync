@@ -78,7 +78,7 @@ DEFAULT_NOTIFICATIONS = [
     }
 ]
 
-@router.get("/", response_model=List[NotificationResponse])
+@router.get("", response_model=List[NotificationResponse])
 def get_notifications(
     db: Client = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
@@ -106,7 +106,7 @@ def get_unread_count(
         unread = sum(1 for d in DEFAULT_NOTIFICATIONS if not d.get("is_read", False))
     return {"unread_count": unread}
 
-@router.post("/", response_model=NotificationResponse)
+@router.post("", response_model=NotificationResponse)
 def create_notification(
     notification: NotificationCreate,
     db: Client = Depends(get_db),

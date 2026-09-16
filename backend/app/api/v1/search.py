@@ -18,7 +18,7 @@ SUGGESTIONS = [
     {"id": "sug_7", "title": "Notifications", "type": "notification"}
 ]
 
-@router.get("/", response_model=GlobalSearchResponse)
+@router.get("", response_model=GlobalSearchResponse)
 def global_search(
     q: Optional[str] = Query(None),
     db: Client = Depends(get_db),

@@ -12,7 +12,7 @@ from app.api.v1.tasks import create_task
 
 router = APIRouter()
 
-@router.post("/", response_model=TaskRequestResponse)
+@router.post("", response_model=TaskRequestResponse)
 def create_task_request(
     request: TaskRequestCreate,
     db: Client = Depends(get_db),
@@ -46,7 +46,7 @@ def create_task_request(
     
     return db_req
 
-@router.get("/", response_model=List[TaskRequestResponse])
+@router.get("", response_model=List[TaskRequestResponse])
 def get_task_requests(
     db: Client = Depends(get_db),
     current_user: User = Depends(get_current_active_user)

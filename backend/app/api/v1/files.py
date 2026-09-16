@@ -48,7 +48,7 @@ async def upload_file(
         "message": "File uploaded successfully"
     }
 
-@router.get("/")
+@router.get("")
 def list_files(
     db: Client = Depends(get_db),
     current_user: User = Depends(get_current_active_user)

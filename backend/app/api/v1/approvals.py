@@ -79,7 +79,7 @@ def _notify_requester(db: Client, approval: dict, decision: str, actor: User) ->
     db.collection("notifications").document(notification["id"]).set(notification)
 
 
-@router.get("/", response_model=List[ApprovalResponse])
+@router.get("", response_model=List[ApprovalResponse])
 def get_approvals(
     status_filter: Optional[str] = None,
     db: Client = Depends(get_db),
@@ -109,7 +109,7 @@ def get_approvals(
     return approvals
 
 
-@router.post("/", response_model=ApprovalResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ApprovalResponse, status_code=status.HTTP_201_CREATED)
 def create_approval(
     approval: ApprovalCreate,
     db: Client = Depends(get_db),

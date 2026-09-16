@@ -136,7 +136,7 @@ def calculate_task_risk(task: Dict[str, Any], faculty_workload: int) -> Dict[str
     task["risk_factors"] = factors
     return task
 
-@router.get("/", response_model=List[TaskResponse])
+@router.get("", response_model=List[TaskResponse])
 def get_tasks(
     priority: Optional[str] = Query(None),
     status_filter: Optional[str] = Query(None, alias="status"),
@@ -204,7 +204,7 @@ def get_tasks(
 
     return tasks
 
-@router.post("/", response_model=TaskResponse)
+@router.post("", response_model=TaskResponse)
 def create_task(
     task: TaskCreate,
     db: Client = Depends(get_db),

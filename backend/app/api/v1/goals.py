@@ -13,7 +13,7 @@ from app.models.models import User, RoleEnum
 
 router = APIRouter()
 
-@router.get("/", response_model=List[DepartmentGoalResponse])
+@router.get("", response_model=List[DepartmentGoalResponse])
 def get_goals(
     db: Client = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
@@ -34,7 +34,7 @@ def get_goals(
         
     return goals
 
-@router.post("/", response_model=DepartmentGoalResponse)
+@router.post("", response_model=DepartmentGoalResponse)
 def create_goal(
     goal: DepartmentGoalCreate,
     db: Client = Depends(get_db),
