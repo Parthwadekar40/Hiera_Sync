@@ -14,6 +14,9 @@ db = None
 # Firestore (missing/invalid service-account credentials).
 using_memory_db = False
 
+# Project the client is actually talking to, for /health and startup logs.
+resolved_project_id = None
+
 
 def _enable_memory_mode(reason: str) -> None:
     global db, using_memory_db
@@ -27,7 +30,7 @@ def _enable_memory_mode(reason: str) -> None:
 
 
 def init_firebase():
-    global db, using_memory_db
+    global db, using_memory_db, resolved_project_id
 
     if firebase_admin._apps:
         db = firestore.client()
@@ -42,7 +45,21 @@ def init_firebase():
 
             cred = credentials.Certificate(key_path)
 
-            firebase_admin.initialize_app(cred, {"projectId": settings.FIREBASE_PROJECT_ID})
+            # Let the service-account file decide the project. Passing
+            # settings.FIREBASE_PROJECT_ID here overrode it, so a stale value in
+            # backend/.env ("my-firebase-project" by default) silently pointed the
+            # app at a different - usually empty - Firestore database.
+            resolved_project_id = getattr(cred, "project_id", None)
+            expected = (settings.FIREBASE_PROJECT_ID or "").strip()
+            if resolved_project_id:
+                if expected and expected != resolved_project_id:
+                    logger.warning(
+                        f"FIREBASE_PROJECT_ID in .env is '{expected}' but the service-account "
+                        f"file belongs to '{resolved_project_id}' - using '{resolved_project_id}'."
+                    )
+                logger.info(f"Firestore project: {resolved_project_id}")
+
+            firebase_admin.initialize_app(cred)
         else:
             logger.warning(
                 "No service-account file at "
@@ -51,10 +68,9 @@ def init_firebase():
                 "FIREBASE_PRIVATE_KEY_PATH) to persist data."
             )
 
+            resolved_project_id = settings.FIREBASE_PROJECT_ID
             firebase_admin.initialize_app(
-                options={
-                    "projectId": settings.FIREBASE_PROJECT_ID
-                }
+                options={"projectId": resolved_project_id} if resolved_project_id else None
             )
 
         client = firestore.client()
