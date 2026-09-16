@@ -4,6 +4,7 @@ from jose import JWTError
 from google.cloud.firestore import Client
 from google.cloud.firestore_v1.base_query import FieldFilter
 from app.auth.jwt import verify_token
+from app.auth.lookup import find_user_by_email
 from app.database.session import get_db
 from app.models.models import User, RoleEnum
 
@@ -17,15 +18,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Client = Depends(g
     )
     token_data = verify_token(token, credentials_exception)
     
-    users_ref = db.collection('users')
-    query = users_ref.where('email', '==', token_data.email).stream()
-    users = list(query)
-    
-    if not users:
+    user_dict = find_user_by_email(db, token_data.email)
+
+    if not user_dict:
         raise credentials_exception
-    
-    user_dict = users[0].to_dict()
-    user_id = user_dict.get("id", users[0].id)
+
+    user_id = user_dict.get("id")
 
     # Auto-sync/heal: If user status is PENDING, check if their join request was Approved
     if user_dict.get("status") == "PENDING":
@@ -40,7 +38,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Client = Depends(g
                 if dept_id:
                     user_dict["department_id"] = dept_id
                 # Persist active status back to users document in Firestore
-                users_ref.document(user_id).update({
+                db.collection('users').document(user_id).update({
                     "status": "ACTIVE",
                     "department_id": user_dict["department_id"]
                 })

@@ -89,8 +89,8 @@ def main() -> int:
     parser.add_argument("--password", default=None,
                         help="shared password for the seeded accounts (prompted if omitted)")
     parser.add_argument("--only-admin", action="store_true",
-                        help="just the HOD account - use this against a real Firebase project "
-                             "so the other four Auth users are not created")
+                        help="only the HOD account and its department - no demo activities, "
+                             "requests or approvals are written. Use this against a real project.")
     args = parser.parse_args()
     base = args.api_base.rstrip("/")
     password = args.password or getpass.getpass("Password for the seeded accounts: ")
@@ -131,6 +131,12 @@ def main() -> int:
                   f"(others use it on /join-department)")
         else:
             print(f"  ! could not create the department: {dept.get('detail')}")
+
+    if args.only_admin:
+        print(f"\nSign in with\n  {DEFAULT_USERS[0]['email']}  /  {password}")
+        print("Activities, requests and approvals were left alone so nothing demo-shaped lands in a "
+              "live department database. Re-run without --only-admin to fill the calendar.")
+        return 0
 
     _, existing_events = call(base, "GET", "/events", token=hod_token)
     # key on title + date so a same-titled activity on another day can still be added

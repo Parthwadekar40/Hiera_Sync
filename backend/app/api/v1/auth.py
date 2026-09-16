@@ -10,6 +10,7 @@ from app.schemas.schemas import (
 from app.models.models import User, RoleEnum
 from app.auth.password import get_password_hash, verify_password
 from app.auth.jwt import create_access_token
+from app.auth.lookup import find_user_by_email, normalize_email, user_exists
 from app.auth.permissions import get_current_active_user, get_current_user, check_role
 from datetime import timedelta
 from app.config.settings import settings
@@ -38,8 +39,9 @@ def _demo_mode() -> bool:
 @router.post("/register", response_model=UserResponse)
 def register(user_in: UserCreate, db: Client = Depends(get_db)):
     users_ref = db.collection('users')
-    query = users_ref.where('email', '==', user_in.email).stream()
-    if list(query):
+    # Stored lowercased so that the address can be typed back in any case later.
+    email = normalize_email(user_in.email)
+    if user_exists(db, email):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     if _demo_mode():
@@ -63,7 +65,7 @@ def register(user_in: UserCreate, db: Client = Depends(get_db)):
     user_data = {
         "id": new_id,
         "name": user_in.name,
-        "email": user_in.email,
+        "email": email,
         "hashed_password": hashed_password,
         "role": user_in.role.value if hasattr(user_in.role, 'value') else str(user_in.role),
         "department_id": user_in.department_id or "AIML",
@@ -81,18 +83,15 @@ def register(user_in: UserCreate, db: Client = Depends(get_db)):
 @router.post("/login", response_model=LoginResponse)
 def login(login_in: LoginRequest, db: Client = Depends(get_db)):
     users_ref = db.collection('users')
-    query = users_ref.where('email', '==', login_in.email).stream()
-    users = list(query)
-    
-    if not users:
+    user_doc = find_user_by_email(db, login_in.email)
+
+    if not user_doc:
         logger.info(f"Login failed: no profile in the 'users' collection for {login_in.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    user_doc = users[0].to_dict()
 
     stored_hash = user_doc.get("hashed_password") or ""
     if not stored_hash:
@@ -130,7 +129,7 @@ def login(login_in: LoginRequest, db: Client = Depends(get_db)):
         data={"sub": user_doc["email"]}, expires_delta=access_token_expires
     )
 
-    user_id = user_doc.get("id", users[0].id)
+    user_id = user_doc.get("id")
     if user_doc.get("status") == "PENDING":
         try:
             requests_ref = db.collection('join_requests')
@@ -227,18 +226,18 @@ def create_employee(
     db: Client = Depends(get_db),
     current_user: User = Depends(check_role([RoleEnum.ADMIN, RoleEnum.HOD]))
 ):
-    users_ref = db.collection('users')
-    query = users_ref.where('email', '==', employee_in.email).stream()
-    if list(query):
+    # Normalised, or the profile can never be signed in to from the login form.
+    email = normalize_email(employee_in.email)
+    if user_exists(db, email):
         raise HTTPException(status_code=400, detail="Email already exists")
-    
+
     pwd = employee_in.password or "Sbjit@123"
     if _demo_mode():
         new_id = f"demo_{uuid.uuid4().hex[:12]}"
     else:
         try:
             fb_user = firebase_auth.create_user(
-                email=employee_in.email,
+                email=email,
                 password=pwd,
                 display_name=employee_in.name
             )
@@ -250,7 +249,7 @@ def create_employee(
     data = {
         "id": new_id,
         "name": employee_in.name,
-        "email": employee_in.email,
+        "email": email,
         "hashed_password": hashed_password,
         "role": employee_in.role.value if hasattr(employee_in.role, 'value') else str(employee_in.role),
         "department_id": employee_in.department_id or "AIML",

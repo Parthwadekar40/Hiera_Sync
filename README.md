@@ -113,7 +113,10 @@ over as soon as `backend/firebase-credentials.json` exists and `FIREBASE_PROJECT
 
 Login checks the bcrypt hash on the `users/{uid}` document in Firestore — it does **not** ask Firebase
 Authentication. So an account created in the Firebase console cannot sign in, and an empty database has
-no account to sign in with. Bootstrap it in this order:
+no account to sign in with. Addresses are compared case-insensitively: registering as `Hod@SBJIT.edu.in`
+and typing `hod@sbjit.edu.in` later is the same account, including for profiles written before that.
+
+**Empty database — bootstrap it through the UI:**
 
 1. Open `http://localhost:5173/register` and create your own account (this writes both the Auth user
    and the Firestore profile). New accounts come back `PENDING`.
@@ -123,7 +126,21 @@ no account to sign in with. Bootstrap it in this order:
 3. Give that code to your faculty. They register, enter the code on /join-department, and you approve
    them on the same screen.
 
-`scripts/seed_demo.py --only-admin --password '...'` does steps 1–2 for you and prints the code.
+`python scripts/seed_demo.py --only-admin --password '...'` does steps 1–2 for you, prints the code, and
+writes nothing else — no demo activities or requests land in a live database.
+
+**Already have data, or the first login still fails** — settle it from the terminal instead. `--list` is
+read-only; the write path does exactly what the API would have done:
+
+```bash
+cd backend
+python scripts/grant_access.py --list
+python scripts/grant_access.py --email hod@sbjit.edu.in --password 'Hiera@2026' --create-department
+```
+
+It creates the profile when it is missing and repairs it otherwise — password set, `status: ACTIVE`,
+`role: HOD`, linked to a department (by id, invite code or a fragment of its name), and it claims an
+unclaimed department's HOD seat. Re-running it changes nothing, so it is safe to try.
 
 ## Design System
 
