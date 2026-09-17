@@ -265,21 +265,47 @@ APScheduler runs a reminder sweep daily at 08:00 and every 6 hours: activities s
 days get a reminder for their owner, and activities whose date passed without completion are
 escalated once. See `backend/app/scheduler/jobs.py`.
 
+The whole surface is 18 route modules and 83 operations over 16 Firestore collections
+(`GET /openapi.json` on a running instance is the authority).
+
+## Verification
+
+Two suites ship with the repository; neither needs a cloud project, an API key or a network.
+
+```bash
+cd backend && pip install -r requirements.txt && pip install pytest httpx
+python -m pytest -q            # 82 cases over auth, RBAC, both approval queues, the risk
+                               # model and the reminder jobs, on the in-memory double
+cd ../frontend && npm install
+npm run test:utils             # 9 cases over date parsing, overlap detection and ICS/CSV output
+```
+
+`backend/tests/` is written as characterisation tests: the expected values are read off `app/`, so a
+change in behaviour fails with the name of the contract that moved. `docs/figures/` carries the paper's
+figures (editable SVG + 300 dpi PNG) and `docs/tables/` its tables as CSV.
+
 ## Repository Layout
 
 ```
 backend/
-  app/api/v1/       route handlers (auth, users, events, tasks, approvals, ai, …)
+  app/api/v1/       18 route modules: auth (accounts + employees), events, tasks, approvals,
+                    task-requests, comments, attachments, files, goals, notifications, ai,
+                    analytics, reports, settings, search, departments, join, test
+  app/auth/         bcrypt hashing, JWT issue/verify, case-insensitive email lookup, role gates
+  app/scheduler/    APScheduler jobs (reminder window, idempotence markers)
   app/database/     Firestore bootstrap + the in-memory demo double
   app/schemas/      Pydantic models, including the activity/approval contracts
-  app/scheduler/    background reminder jobs
   app/utils/        shared helpers (dates, logging)
+  tests/            pytest suite (82 cases) — runs on the in-memory double
 frontend/
   src/api/          typed fetch client, one module per resource
-  src/components/   shared widgets (FullCalendarEventModal, tasks/, …)
+  src/components/   Chatbot, FileUpload, NotificationCenter, ProtectedRoute, StatCard,
+                    common/ (StatCard) and tasks/ (HOD + teacher dashboards, views,
+                    comments, attachments, detail modal)
   src/layouts/      MainLayout, Navbar, Sidebar
   src/pages/        routes; CalendarPage + calendarData + Approvals own the workflow UI
-  src/utils/        calendar formatting, ICS/CSV export
+  src/utils/        calendar formatting (date coercion, overlap), ICS/CSV export
+tests/              node:test suite for the calendar utilities (npm run test:utils)
   src/index.css     design tokens, component primitives, FullCalendar overrides
 ```
 

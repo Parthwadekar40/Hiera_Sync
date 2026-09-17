@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="473.608984pt" height="263.88pt" viewBox="0 0 473.608984 263.88" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-17T03:27:08.373426</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 263.88 
+L 473.608984 263.88 
+L 473.608984 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 18.8064 128.44728 
+L 218.7936 128.44728 
+Q 224.1504 128.44728 224.1504 125.45352 
+L 224.1504 32.39748 
+Q 224.1504 29.40372 218.7936 29.40372 
+L 18.8064 29.40372 
+Q 13.4496 29.40372 13.4496 32.39748 
+L 13.4496 125.45352 
+Q 13.4496 128.44728 18.8064 128.44728 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #eef2ff; opacity: 0.34; stroke: #4f46e5; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 26.172 58.71762 
+L 211.428 58.71762 
+Q 215.4456 58.71762 215.4456 56.4723 
+L 215.4456 43.49934 
+Q 215.4456 41.25402 211.428 41.25402 
+L 26.172 41.25402 
+Q 22.1544 41.25402 22.1544 43.49934 
+L 22.1544 56.4723 
+Q 22.1544 58.71762 26.172 58.71762 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 26.172 77.6781 
+L 211.428 77.6781 
+Q 215.4456 77.6781 215.4456 75.43278 
+L 215.4456 62.45982 
+Q 215.4456 60.2145 211.428 60.2145 
+L 26.172 60.2145 
+Q 22.1544 60.2145 22.1544 62.45982 
+L 22.1544 75.43278 
+Q 22.1544 77.6781 26.172 77.6781 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 26.172 96.63858 
+L 211.428 96.63858 
+Q 215.4456 96.63858 215.4456 94.39326 
+L 215.4456 81.4203 
+Q 215.4456 79.17498 211.428 79.17498 
+L 26.172 79.17498 
+Q 22.1544 79.17498 22.1544 81.4203 
+L 22.1544 94.39326 
+Q 22.1544 96.63858 26.172 96.63858 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 26.172 115.59906 
+L 211.428 115.59906 
+Q 215.4456 115.59906 215.4456 113.35374 
+L 215.4456 100.38078 
+Q 215.4456 98.13546 211.428 98.13546 
+L 26.172 98.13546 
+Q 22.1544 98.13546 22.1544 100.38078 
+L 22.1544 113.35374 
+Q 22.1544 115.59906 26.172 115.59906 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 237.5424 128.44728 
+L 437.5296 128.44728 
+Q 442.8864 128.44728 442.8864 125.45352 
+L 442.8864 32.39748 
+Q 442.8864 29.40372 437.5296 29.40372 
+L 237.5424 29.40372 
+Q 232.1856 29.40372 232.1856 32.39748 
+L 232.1856 125.45352 
+Q 232.1856 128.44728 237.5424 128.44728 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #e0f2fe; opacity: 0.34; stroke: #0ea5e9; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 244.908 58.71762 
+L 430.164 58.71762 
+Q 434.1816 58.71762 434.1816 56.4723 
+L 434.1816 43.49934 
+Q 434.1816 41.25402 430.164 41.25402 
+L 244.908 41.25402 
+Q 240.8904 41.25402 240.8904 43.49934 
+L 240.8904 56.4723 
+Q 240.8904 58.71762 244.908 58.71762 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 244.908 77.6781 
+L 430.164 77.6781 
+Q 434.1816 77.6781 434.1816 75.43278 
+L 434.1816 62.45982 
+Q 434.1816 60.2145 430.164 60.2145 
+L 244.908 60.2145 
+Q 240.8904 60.2145 240.8904 62.45982 
+L 240.8904 75.43278 
+Q 240.8904 77.6781 244.908 77.6781 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 244.908 96.63858 
+L 430.164 96.63858 
+Q 434.1816 96.63858 434.1816 94.39326 
+L 434.1816 81.4203 
+Q 434.1816 79.17498 430.164 79.17498 
+L 244.908 79.17498 
+Q 240.8904 79.17498 240.8904 81.4203 
+L 240.8904 94.39326 
+Q 240.8904 96.63858 244.908 96.63858 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 244.908 115.59906 
+L 430.164 115.59906 
+Q 434.1816 115.59906 434.1816 113.35374 
+L 434.1816 100.38078 
+Q 434.1816 98.13546 430.164 98.13546 
+L 244.908 98.13546 
+Q 240.8904 98.13546 240.8904 100.38078 
+L 240.8904 113.35374 
+Q 240.8904 115.59906 244.908 115.59906 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 18.8064 248.19768 
+L 218.7936 248.19768 
+Q 224.1504 248.19768 224.1504 245.20392 
+L 224.1504 152.14788 
+Q 224.1504 149.15412 218.7936 149.15412 
+L 18.8064 149.15412 
+Q 13.4496 149.15412 13.4496 152.14788 
+L 13.4496 245.20392 
+Q 13.4496 248.19768 18.8064 248.19768 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #fef3c7; opacity: 0.34; stroke: #b45309; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 26.172 178.46802 
+L 211.428 178.46802 
+Q 215.4456 178.46802 215.4456 176.2227 
+L 215.4456 163.24974 
+Q 215.4456 161.00442 211.428 161.00442 
+L 26.172 161.00442 
+Q 22.1544 161.00442 22.1544 163.24974 
+L 22.1544 176.2227 
+Q 22.1544 178.46802 26.172 178.46802 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 26.172 197.4285 
+L 211.428 197.4285 
+Q 215.4456 197.4285 215.4456 195.18318 
+L 215.4456 182.21022 
+Q 215.4456 179.9649 211.428 179.9649 
+L 26.172 179.9649 
+Q 22.1544 179.9649 22.1544 182.21022 
+L 22.1544 195.18318 
+Q 22.1544 197.4285 26.172 197.4285 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 26.172 216.38898 
+L 211.428 216.38898 
+Q 215.4456 216.38898 215.4456 214.14366 
+L 215.4456 201.1707 
+Q 215.4456 198.92538 211.428 198.92538 
+L 26.172 198.92538 
+Q 22.1544 198.92538 22.1544 201.1707 
+L 22.1544 214.14366 
+Q 22.1544 216.38898 26.172 216.38898 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 26.172 235.34946 
+L 211.428 235.34946 
+Q 215.4456 235.34946 215.4456 233.10414 
+L 215.4456 220.13118 
+Q 215.4456 217.88586 211.428 217.88586 
+L 26.172 217.88586 
+Q 22.1544 217.88586 22.1544 220.13118 
+L 22.1544 233.10414 
+Q 22.1544 235.34946 26.172 235.34946 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 237.5424 248.19768 
+L 437.5296 248.19768 
+Q 442.8864 248.19768 442.8864 245.20392 
+L 442.8864 152.14788 
+Q 442.8864 149.15412 437.5296 149.15412 
+L 237.5424 149.15412 
+Q 232.1856 149.15412 232.1856 152.14788 
+L 232.1856 245.20392 
+Q 232.1856 248.19768 237.5424 248.19768 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #dcfce7; opacity: 0.34; stroke: #059669; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 244.908 178.46802 
+L 430.164 178.46802 
+Q 434.1816 178.46802 434.1816 176.2227 
+L 434.1816 163.24974 
+Q 434.1816 161.00442 430.164 161.00442 
+L 244.908 161.00442 
+Q 240.8904 161.00442 240.8904 163.24974 
+L 240.8904 176.2227 
+Q 240.8904 178.46802 244.908 178.46802 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 244.908 197.4285 
+L 430.164 197.4285 
+Q 434.1816 197.4285 434.1816 195.18318 
+L 434.1816 182.21022 
+Q 434.1816 179.9649 430.164 179.9649 
+L 244.908 179.9649 
+Q 240.8904 179.9649 240.8904 182.21022 
+L 240.8904 195.18318 
+Q 240.8904 197.4285 244.908 197.4285 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 244.908 216.38898 
+L 430.164 216.38898 
+Q 434.1816 216.38898 434.1816 214.14366 
+L 434.1816 201.1707 
+Q 434.1816 198.92538 430.164 198.92538 
+L 244.908 198.92538 
+Q 240.8904 198.92538 240.8904 201.1707 
+L 240.8904 214.14366 
+Q 240.8904 216.38898 244.908 216.38898 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 244.908 235.34946 
+L 430.164 235.34946 
+Q 434.1816 235.34946 434.1816 233.10414 
+L 434.1816 220.13118 
+Q 434.1816 217.88586 430.164 217.88586 
+L 244.908 217.88586 
+Q 240.8904 217.88586 240.8904 220.13118 
+L 240.8904 233.10414 
+Q 240.8904 235.34946 244.908 235.34946 
+z
+" clip-path="url(#pa2d38e3a3a)" style="fill: #ffffff; stroke: #c7cbd4; stroke-width: 0.7; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 8.4px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="7.2" y="16.077487" transform="rotate(-0 7.2 16.077487)">Fig. 2 — Persistence: 16 top-level collections, their keys and what references them</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 5.9px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #6b7280" x="7.2" y="252.268857" transform="rotate(-0 7.2 252.268857)">Every collection is top-level (no department sub-collections), so scoping is a query-time predicate. ⚠ marks a reference held by display name instead of id.</text>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 6.1px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #4f46e5" x="23.2704" y="43.01957" transform="rotate(-0 23.2704 43.01957)">IDENTITY &amp; ACCESS</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="29.52" y="50.22819" transform="rotate(-0 29.52 50.22819)">departments   ·   uid · code (8 chars, unique) · hod_id · is_hod</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(29.52 69.18867)">users   ·   key = uid · email normalised · hashed_password · role</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(29.52 76.39917)">(10 values) · department_id · status PENDING|ACTIVE</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(29.52 88.14915)">join_requests   ·   faculty_id · department_id · department_code</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(29.52 95.4159)">status Pending/Approved/Rejected</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="29.52" y="107.17638" transform="rotate(-0 29.52 107.17638)">settings   ·   key = uid · 4 booleans (stored, never read — §6.4)</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 4.4px; font-family: 'DejaVu Sans'; fill: #6b7280" transform="translate(23.2704 114.710618)">referenced by: users.department_id → departments.uid · join_requests.approval writes</text>
+    <text style="font-size: 4.4px; font-family: 'DejaVu Sans'; fill: #6b7280" transform="translate(23.2704 121.310618)">department_id + status ACTIVE in one update · get_current_user re-checks it (read-repair)</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 6.1px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #0ea5e9" x="242.0064" y="43.020047" transform="rotate(-0 242.0064 43.020047)">COORDINATION (the workflow core)</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 50.75994)">events   ·   12 schema fields · date stored ISO · status 4-state flow</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 57.42819)">⚠ person (display name) · reminded_at · overdue_notified_at</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 69.18867)">tasks   ·   17 fields · subtasks[] · progress · require_approval · goal_id</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 76.38867)">assigned_id (+ ⚠ assigned name fallback) · ai_priority_score unused</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 88.14915)">task_requests   ·   requester_id · reviewed_by · created_task_id · rejection_reason</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 95.392275)">status PENDING/APPROVED/REJECTED/CANCELLED</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 107.17638)">approvals   ·   requested · assigned (both ⚠ names) · priority</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 114.30963)">status Pending/Approved/Rejected · reviewed_at</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 4.4px; font-family: 'DejaVu Sans'; fill: #6b7280" transform="translate(242.0064 114.710618)">referenced by: task_requests.created_task_id → tasks · tasks.goal_id → department_goals</text>
+    <text style="font-size: 4.4px; font-family: 'DejaVu Sans'; fill: #6b7280" transform="translate(242.0064 121.310618)">events.reminded_at is the idempotence marker for the scheduler · decision writes a notification</text>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 6.1px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #b45309" x="23.2704" y="162.76997" transform="rotate(-0 23.2704 162.76997)">TASK DETAIL &amp; AUDIT</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="29.52" y="169.97859" transform="rotate(-0 29.52 169.97859)">task_comments   ·   task_id · author_id/name · content · mentions[]</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="29.52" y="188.93907" transform="rotate(-0 29.52 188.93907)">task_attachments   ·   task_id · file_name/type/size · storage_path · uploaded_by</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(29.52 207.89955)">files   ·   safe_filename (uuid prefix) · file_path under ./uploads</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(29.52 215.1663)">the bytes live on the API host, not in Firestore</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(29.52 226.86003)">activity_logs   ·   user_id/name · action · category · details · timestamp</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(29.52 234.06003)">written only by create_task — read as the latest 5</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 4.4px; font-family: 'DejaVu Sans'; fill: #6b7280" transform="translate(23.2704 234.522205)">gates: comments/attachments check the caller is the task's assignee or the desk · task access</text>
+    <text style="font-size: 4.4px; font-family: 'DejaVu Sans'; fill: #6b7280" transform="translate(23.2704 241.061017)">is validated per request (validate_task_access) rather than by a query filter</text>
+   </g>
+   <g id="text_21">
+    <text style="font-weight: 700; font-size: 6.1px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #059669" x="242.0064" y="162.76997" transform="rotate(-0 242.0064 162.76997)">DELIVERY &amp; GOALS</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 169.97859)">notifications   ·   user_id = uid or 'department' · title · message · type</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 177.17859)">priority · target_route · icon · is_read · status</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 188.93907)">department_goals   ·   owner_id · title · description · category · start/target date</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 196.096695)">status NOT_STARTED/…</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 207.89955)">goal_milestones   ·   goal_id · order · due_date · status PENDING/IN_PROGRESS/DONE</text>
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; fill: #111827" transform="translate(248.256 215.09955)">completed_at (full CRUD in the API, read-only in the UI)</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 4.8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #111827" x="248.256" y="226.92678" transform="rotate(-0 248.256 226.92678)">test   ·   one probe document for POST /test/firebase</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 4.4px; font-family: 'DejaVu Sans'; fill: #6b7280" transform="translate(242.0064 234.461017)">audience rule: GET /notifications streams user_id ∈ { own uid , 'department' } — the shared</text>
+    <text style="font-size: 4.4px; font-family: 'DejaVu Sans'; fill: #6b7280" transform="translate(242.0064 241.122205)">channel is a literal document field, so read state on it is shared by the department</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pa2d38e3a3a">
+   <rect x="7.2" y="7.2" width="446.4" height="249.48"/>
+  </clipPath>
+ </defs>
+</svg>

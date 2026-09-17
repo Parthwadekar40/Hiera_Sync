@@ -1,0 +1,12 @@
+"Table III. The additive risk model (capped to [5, 95] unless closed)"
+Condition,Δ,Note
+"`status ∈ {Completed, Awaiting Approval}`","→ 0, level LOW","returns immediately, factor explains it"
+`days_left < 0`,+90,"factor ""Task is overdue by *n* days."""
+0 ≤ `days_left` ≤ 2,+50,"""Only *n* days remaining."""
+3 ≤ `days_left` ≤ 5,+30,"""*n* days remaining."""
+`progress` < 50 % **and** `days_left` ≤ 3,+25,"""Progress is only *x*%."""
+`priority == High`,+15,"""…less margin for error."""
+`faculty_workload` > 3,+20,"""*k* active tasks"""
+unparseable/absent deadline,—,`days_left` defaults to 10
+after summation,"`min(max(s, 5), 95)`",floor so nothing reads as zero
+bands,"> 70 HIGH, > 40 MEDIUM, else LOW",

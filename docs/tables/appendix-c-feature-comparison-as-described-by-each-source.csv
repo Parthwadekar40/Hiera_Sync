@@ -1,0 +1,11 @@
+Appendix C - Feature comparison (as described by each source)
+Capability,AAMS [1],Doc-workflow [2],"Timetable GA [11], [12]",ScheduleMe [7],Togedule [8],**HiéraSync AI**
+Calendar as primary surface,no,no,partial (generated output),"yes, via Google Calendar",partial,"**yes, own store**"
+Drag-and-drop reschedule with persistence,no,no,no,via natural language only,no,"**yes, optimistic with revert**"
+Approval chain with audit trail,yes,yes,no,no,no,"**yes, and approval→task creation**"
+Per-person workload legibility,partial,no,yes (solver objective),no,no,"**yes, in view and ranked**"
+Suggestion with an explicit reason,summary only,no,no,yes,yes,"**yes, deterministic core**"
+Works with no model key / no cloud project,no,n/a,no,no,no,**yes (double + heuristics)**
+Calendar export (.ics),partial,no,PDF only,inherits Google,no,"**yes, RFC-tested**"
+Cold start without an administrator,not addressed,not addressed,n/a,n/a,n/a,**specified and tested**
+Verification that a reviewer can rerun,n/a,n/a,no,no,no,"**91 cases, 244 asserts, in-repo**"

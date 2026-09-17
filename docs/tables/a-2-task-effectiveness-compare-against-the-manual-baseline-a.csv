@@ -1,0 +1,8 @@
+"A.2 Task effectiveness (compare against the manual baseline, as in [3], [4])"
+Metric,Manual (spreadsheet/chat),With HiéraSync,Δ
+Median time to approve or reject a request (min),__,__,__
+Double-booking incidents per month (validated by §4.3 or by hand),__,__,__
+Requests older than 7 days at quarter end,__,__,__
+"Activities whose owner confirmed receipt (from read state, %)",__,__,__
+"Reschedules reaching the owner before the date (%, from `reminded_at`)",__,__,__
+Activities exported to a personal calendar (%),__,__,__

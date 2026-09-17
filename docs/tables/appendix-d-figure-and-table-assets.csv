@@ -1,0 +1,9 @@
+Appendix D - Figure and table assets
+Asset,Content that must appear,Where it is cited
+"`fig1-architecture` (SVG, PNG 300 dpi)","four bands and the arrows of Fig. 1, including the optional Gemini edge and the `demo mode` arrow to `MemoryClient`",§4.1
+`fig2-data-model`,"the 16 collections of Table II as nodes; the four name-based edges (`events.person`, `approvals.requested`/`assigned`, `tasks.assigned`) drawn dashed",§4.2
+`fig3-state-machines`,three lanes: Planned→Assigned→Review→Completed (with the reopen arc); Pending→Approved/Rejected with the annotate self-loop; PENDING→APPROVED/REJECTED/CANCELLED with `create_task()` and `created_task_id` on the approval arc,§4.3
+`fig4-notification-flow`,"the create-time path (`notify_assignee` → name lookup → fallback `department`) and the sweep path (window test → status test → marker test → push → stamp), plus the escalation branch",§4.3
+`fig5-risk-bands`,"the additive rules of Table III as a horizontal stacked band chart from 0 to 100 with the [5, 95] clamp drawn as cut-off caps and the 40/70 level lines marked",§4.4
+"`tables.xlsx`, `tables/*.csv`","Tables I–IV and Appendix A's blank tables, one sheet per table, ready to restyle",§3.4–§6.1
+screenshots (see `docs/figures/SCREENSHOTS.md`),"Calendar month view with the day rail; the day detail modal with the status stepper; the same page after stopping the API, showing ""Offline preview data""; the exported `.ics` opened in a calendar client; Tasks as HOD vs. faculty; the Approvals desk with a ranked suggestion; `GET /health` in a browser showing the demo-mode line","§4.3, §4.6, §5"

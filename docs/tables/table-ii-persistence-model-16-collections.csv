@@ -1,0 +1,18 @@
+Table II. Persistence model (16 collections)
+Collection,Key,Carries,Written by,Read gating
+`users`,Firebase uid / `demo_<12 hex>`,"name, email (normalised), `hashed_password`, `role`, `department_id`, `designation`, `status`","register, `POST/PUT /auth/employees`, join approval, `grant_access.py`, first-department bootstrap",profile self; list to any active user
+`departments`,uuid,"name, unique 8-char `code`, `hod_id`, `is_hod`","`POST /departments`, `PUT /departments/code`",own department
+`join_requests`,uuid,"`faculty_id`, `department_id`, `department_code`, `status` ∈ Pending/Approved/Rejected, `requested_at`",`POST /join/request`; decision routes,requester's own; desk sees its department's
+`events`,uuid (or `evt_seed_n`),"12 schema fields (§4.3), plus `reminded_at`, `overdue_notified_at`, `creator_id`, `created_at`",`POST/PUT/DELETE /events` (desk only); scheduler markers,"any active user, filtered"
+`tasks`,uuid,"17 schema fields incl. `subtasks[]`, `reminder`, `require_approval`, `goal_id`, `progress`, `deadline`",`POST/PUT/DELETE /tasks` (desk only),FACULTY sees only tasks whose `assigned_id` matches or whose `assigned` text contains their name
+`approvals`,uuid,"`title`, `requested`, `assigned`, `priority`, `status`, `comments`, `created_at`, `reviewed_at`",`POST/PUT/DELETE /approvals`,any active user (list is department-wide)
+`task_requests`,uuid,"request fields + `requester_id`, `status` ∈ PENDING/APPROVED/REJECTED/CANCELLED, `rejection_reason`, `created_task_id`, `reviewed_by`","`POST /task-requests`, decision routes","own for faculty, all for desk"
+`notifications`,`notif_<8 hex>`,"`user_id` (or `""department""`), `title`, `message`, free-form `type`, `priority`, `target_route`, `icon`, `status`, `is_read`, `created_at`",5 fan-out sites + `POST /notifications`,"`user_id ∈ {self, ""department""}`"
+`task_comments`,uuid,"`task_id`, `author_id/name`, `content`, `mentions[]`",`POST /comments/{task_id}`,task participants
+`task_attachments`,uuid,"`task_id`, `file_name/type/size`, `storage_path`, `uploaded_by`",`POST /attachments/{task_id}`,task participants
+`files`,uuid,"`filename`, `safe_filename`, `file_path`, size, `content_type`, `uploader_id/name`",`POST /files/upload` (bytes to `./uploads`),any active user
+`department_goals`,uuid,"title, description, category, start/target date, `owner_id`, status",`POST/PATCH/DELETE /goals`,any active user reads
+`goal_milestones`,uuid,"`goal_id`, title, description, `due_date`, `order`, `status`, `completed_at`",milestone routes (desk only),nested into goal reads
+`settings`,uid,"four booleans (`ai_recommendation`, `task_analysis`, `deadline_alert`, `email_notifications`)",lazily on first read; `PUT /settings/me`,self
+`activity_logs`,auto,"`user_id/name`, `action`, `category`, `details`, `timestamp`",`create_task` only,"latest 5, any active user"
+`test`,auto,`POST /test/firebase` probe record,dev probe,dev probe

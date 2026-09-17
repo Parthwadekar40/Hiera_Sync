@@ -1,0 +1,14 @@
+Table I. Requirement → implementation
+Req,Backend,Frontend / other,Checked by
+FR1,"`POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/forgot-password`","`api/auth.ts`, `pages/Auth/*`",`test_api_surface.py` (4 cases)
+FR2,"`GET/POST /auth/employees`, `PUT /auth/employees/{id}`","`pages/Employees.tsx`, `api/employees.ts`",2 cases
+FR3,"`POST /departments`, `GET /departments/me`, `PUT /departments/code`",`pages/CreateDepartment.tsx`,1 case (gate)
+FR4,"`/join/request`, `/join/{status,pending,approved,rejected}`, `/join/{id}/{approve,reject}`",`pages/JoinDepartment.tsx`,1 case + manual walkthrough
+FR5,`/events` CRUD + query filters,"`pages/CalendarPage.tsx`, `utils/calendar.ts`",7 cases
+FR6,"`POST /events/{id}/remind`, `notify_assignee` on create",day-detail modal,2 cases
+FR7,`app/scheduler/jobs.py` (cron 08:00 + 6 h interval),—,3 cases
+FR8,"`/tasks` CRUD, `calculate_task_risk`, `activity_logs` write",`pages/Tasks.tsx` + role dashboards,4 cases
+FR9,"`/task-requests` POST/GET, `/{id}/approve`, `api_route([""PATCH"",""PUT""])`",`pages/TaskRequests.tsx`,4 cases
+FR10,"`/approvals` CRUD + `/{id}/{approve,reject}`",`pages/Approvals.tsx`,4 cases
+FR11,"`/comments/{task_id}`, `/attachments/{task_id}`, `/files/{upload,,download/{id}}`","`components/tasks/Task*`, `FileUpload.tsx`",manual
+FR12,"`/goals…` (8 routes), `/reports/*`, `/notifications/*`, `/settings/*`, `/search`, `/analytics/faculty-performance`",ICS/CSV export in `utils/calendar.ts`,9 cases
