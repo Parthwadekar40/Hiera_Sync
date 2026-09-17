@@ -1,17 +1,14 @@
 # HiéraSync AI: A Role-Aware Departmental Coordination System with a Deterministic Calendar Core and a Human-in-the-Loop Approval Desk
 
 **Track:** Undergraduate project paper — Computer Engineering
-**Authors:** [Author Name]$^{1}$, [Co-author Name]$^{2}$, [Guide Name]$^{3}$
-**Affiliation:** $^{1,2,3}$ Department of CSE (Artificial Intelligence & Machine Learning), [Institute Name], [City], India
-**Correspondence:** [email]
+**Authors:** [Author Name] (1), [Co-author Name] (1), [Guide Name] (2)
+**Affiliation:** (1) Department of CSE (Artificial Intelligence & Machine Learning), [Institute Name], [City], India · (2) Guide, same department
+**Correspondence:** [email] · **Date:** [submission date]
 **Source / reproducibility:** https://github.com/Atulgupta07/Hiera_Sync
 
-> **Body length:** 5,303 words (Abstract + §1–§9) — the size of an 8–10 page IEEE two-column
-> paper. Per section: Abstract 282 · §1 482 · §2 1067 · §3 462 · §4 1140 · §5 694 · §6 574 · §7 317 · §8 182 · §9 103. References and appendices are excluded. Delete this block
-> before submission. 5,238 words (Abstract + §1–§9) — the size of an 8–10 page IEEE two-column paper.
-> Per section: Abstract 282 · §1 Introduction 482 · §2 Related work 1,042 · §3 Requirements 458 ·
-> §4 Design 1,122 · §5 Implementation 688 · §6 Verification 562 · §7 Uniqueness 317 · §8 Limitations 182 ·
-> §9 Conclusion 103. References and appendices are excluded from that count. Delete this block before submission.
+> **Body length:** 5,303 words (Abstract + §1–§9) — the size of an 8–10 page IEEE two-column paper.
+> Per section: Abstract 282 · §1 482 · §2 1 067 · §3 462 · §4 1 140 · §5 694 · §6 574 · §7 317 ·
+> §8 182 · §9 103. References and appendices are excluded. Delete this block before submission.
 
 ---
 
