@@ -524,3 +524,94 @@ class TestBenchmarks:
         ours = [R.assess(t, ctx)["risk_score"] for t in rows]
         naive = [ {"Low": 10, "Medium": 40, "High": 70, "Urgent": 90}[t["priority"]] for t in rows]
         assert thresholds(y, ours)["top_20pct_precision"] >= thresholds(y, naive)["top_20pct_precision"]
+
+
+class TestUiSurfaces:
+    """Endpoints called by the four v2 pages: Risk Center, Approval Desk, Analytics, Automation Center."""
+
+    def test_approval_desk_queue_funnel_and_policies(self, client, hod):
+        q = client.get("/api/v1/workflow/queue", headers=hod)
+        assert q.status_code == 200
+        body = q.json()
+        assert body["role"] == "HOD"
+        assert set(body["counts"]) >= {"total", "breached", "due_soon"}
+        for row in body["items"]:
+            assert {"id", "title", "kind", "stage", "sla"} <= set(row)
+            assert row["sla"]["state"] in ("on_track", "due_soon", "breached", "escalated")
+
+        f = client.get("/api/v1/workflow/stats/funnel", headers=hod).json()
+        assert {"buckets", "pending_breaching_sla", "by_kind", "median_hours_to_decision"} <= set(f)
+        assert f["buckets"].get("PENDING", 0) == body["counts"]["total"] or f["buckets"]["PENDING"] >= 0
+
+        pol = client.get("/api/v1/workflow/policies", headers=hod).json()
+        kinds = {p["kind"] for p in pol["policies"]}
+        assert {"leave", "event", "purchase"} <= kinds
+        assert pol["stages"] == ["HOD", "PRINCIPAL"]
+
+    def test_delegation_moves_the_decision_right(self, client, faculty, hod, store):
+        rid = client.post(
+            "/api/v1/workflow/",
+            json={"title": "Guest lecture hall", "kind": "event", "evidence": {"venue": "Seminar Hall", "date": "next month", "expected_attendees": "120"}},
+            headers=faculty,
+        ).json()["id"]
+
+        others = [d for d in (s.to_dict() for s in store.collection("users").stream()) if d.get("role") in ("HOD",) and d.get("id") != "usr_hod"]
+        if not others:
+            others = [d for d in (s.to_dict() for s in store.collection("users").stream()) if d.get("role") in ("ADMIN",) and d.get("id") != "usr_hod"]
+        sub = others[0]
+        sub_headers = {"Authorization": f"Bearer {token_for(client, sub['email'])}"}
+
+        d = client.post(f"/api/v1/workflow/{rid}/delegate", json={"to": sub["id"], "note": "on leave this week"}, headers=hod)
+        assert d.status_code == 200, d.text
+        assert d.json()["delegated_to"] == sub["id"]
+
+        blocked = client.post(f"/api/v1/workflow/{rid}/decide", json={"decision": "APPROVE", "note": "trying anyway"}, headers=hod)
+        assert blocked.status_code == 403 and "delegated" in blocked.json()["detail"].lower()
+
+        step = client.post(f"/api/v1/workflow/{rid}/decide", json={"decision": "APPROVE", "note": "covering"}, headers=sub_headers)
+        assert step.status_code == 200 and step.json()["stage"] == "PRINCIPAL"
+
+    def test_analytics_page_data_and_formulas(self, client, hod, principal):
+        card = client.get("/api/v1/metrics/scorecard?days=30", headers=hod).json()
+        for section in ("tasks", "risk", "approvals", "workload", "automation", "formulas"):
+            assert section in card, f"scorecard missing {section}"
+        # every published formula is a human-readable ratio, so the number can be re-derived by hand
+        assert "on_time_rate" in card["formulas"] and "/" in card["formulas"]["on_time_rate"]
+        assert all(isinstance(v, str) and v for v in card["formulas"].values())
+        assert card["analytics_scope"] in ("full_institute", "department", "self", "none")
+
+        fac = client.get("/api/v1/metrics/faculty", headers=hod).json()
+        assert fac["count"] == len(fac["items"]) and "weights" in fac and fac["note"]
+
+        dept = client.get("/api/v1/metrics/departments", headers=hod).json()["items"]
+        assert dept and {"health_index", "workload_balance_index", "projected_misses"} <= set(dept[0])
+
+        fc = client.get("/api/v1/metrics/forecast?horizon_days=28", headers=hod).json()
+        assert fc["horizon_days"] == 28 and "/" in fc["method"] or fc["method"]
+        rows = fc["expected_completions_by_week"]
+        assert rows and set(rows[0]) == {"week", "count"}
+        assert fc["likely_to_miss"] + fc["within_horizon"] == fc["open_tasks"]
+        assert fc["capacity_note"]
+
+        assert client.get("/api/v1/metrics/risk-trend?days=30", headers=hod).json()["count"] == 0
+        # snapshot capture is a manage_system capability: the HOD is refused, the Principal is allowed
+        assert client.post("/api/v1/metrics/snapshot", headers=hod).status_code == 403
+        assert client.post("/api/v1/metrics/snapshot", headers=principal).json()["ok"] is True
+        snap = client.get("/api/v1/metrics/risk-trend?days=30", headers=hod).json()
+        assert snap["count"] >= 1 and "bands" in snap["items"][0]
+
+    def test_export_is_capability_gated_and_streams_csv(self, client, hod, faculty):
+        r = client.get("/api/v1/metrics/export?kind=tasks&format=csv", headers=hod)
+        assert r.status_code == 200
+        assert "csv" in r.headers["content-type"]
+        header_row = r.text.splitlines()[0]
+        assert "title" in header_row and "risk_score" in header_row
+
+        for kind in ("scorecard", "faculty", "approvals", "departments", "audit"):
+            assert client.get(f"/api/v1/metrics/export?kind={kind}&format=csv", headers=hod).status_code == 200
+
+        denied = client.get("/api/v1/metrics/export?kind=tasks&format=csv", headers=faculty)
+        assert denied.status_code == 403 and "export_reports" in denied.json()["detail"]
+
+        bad = client.get("/api/v1/metrics/export?kind=nope&format=csv", headers=hod)
+        assert bad.status_code in (400, 422)

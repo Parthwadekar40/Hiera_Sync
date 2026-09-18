@@ -252,7 +252,16 @@ export const metricsApi = {
         health_index: number;
       }>;
     }>(`/metrics/departments?days=${days}`),
-  forecast: (weeks = 4) => client<{ points: Array<{ week: string; count: number }> }>(`/metrics/forecast?weeks=${weeks}`),
+  forecast: (horizonDays = 28) =>
+    client<{
+      horizon_days: number;
+      method: string;
+      open_tasks: number;
+      expected_completions_by_week: Array<{ week: string; count: number }>;
+      likely_to_miss: number;
+      within_horizon: number;
+      capacity_note: string;
+    }>(`/metrics/forecast?horizon_days=${horizonDays}`),
   riskTrend: (days = 30) =>
     client<{ count: number; items: Array<{ taken_at: string; bands?: Record<string, number>; LOW?: number; MEDIUM?: number; HIGH?: number; mean_risk?: number; open_tasks?: number }> }>(
       `/metrics/risk-trend?days=${days}`,

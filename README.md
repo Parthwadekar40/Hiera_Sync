@@ -29,7 +29,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 cd frontend && npm install && npm run dev              # http://localhost:5173  (/api proxied to :8000)
 cd backend && python scripts/e2e_demo.py               # the deck's success criterion, as a 13-check test
-cd backend && python -m pytest -q                      # 44 tests
+cd backend && python -m pytest -q                      # 48 tests
 docker compose up --build                              # backend + SPA + browsable notification outbox
 ```
 
@@ -72,7 +72,7 @@ backend/
     models/ schemas/   Pydantic v2 contracts
     config/ settings.py  60+ env-driven settings
   scripts/             e2e_demo.py (acceptance), check_store_parity.py, export_sqlite_to_firestore.py
-  tests/               test_platform.py — 44 tests
+  tests/               test_platform.py — 48 tests
   Dockerfile · requirements.txt · .env.example
 frontend/              src/{api,pages,components,hooks,context} · 13+ role-aware pages · Dockerfile · nginx.conf
 docs/                  01–07 report sections + 05_RBAC_MATRIX.md + benchmark_results.json + README.md (index)

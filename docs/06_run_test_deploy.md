@@ -37,10 +37,14 @@ Served by the same origin (the SPA is picked up from `STATIC_DIR`): `/dashboard`
 ```bash
 cd backend
 python scripts/e2e_demo.py                       # deck success criterion, 13 checks, exit code = result
-python -m pytest -q                               # 44 unit/API tests
+python -m pytest -q                               # 48 unit/API tests
 python -m app.engine.benchmarks --tasks 500       # model comparison (docs/02)
 python scripts/check_store_parity.py              # embedded store vs Firestore query semantics
 ```
+
+`TestUiSurfaces` covers exactly what the four v2 pages call — the approval queue/funnel/policies, delegation rights
+transfer, the scorecard formulas, the forecast arithmetic (`likely_to_miss + within_horizon == open_tasks`), snapshot
+capability gating, and the six export datasets including the 403 for a role without `export_reports`.
 
 `e2e_demo.py` prints the whole loop and asserts it: RBAC 403 for a non-privileged export, `risk_score 23.6 LOW` on a fresh task, factors with evidence, what-if delta, HOD→Principal staged approval, auto-created task, notification fan-out (dev outbox: 7 e-mail / 6 SMS / 3 WhatsApp), queue flush, every cron job run on demand, audit-chain verification, analytics scorecard with published formulas, and a 23-row CSV export.
 

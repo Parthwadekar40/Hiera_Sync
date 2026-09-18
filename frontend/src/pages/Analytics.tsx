@@ -21,6 +21,7 @@ export default function Analytics() {
   const { user } = useAuth();
   const role = String((user as { role?: string } | null)?.role ?? '');
   const canExport = ['ADMIN', 'PRINCIPAL', 'HOD'].includes(role);
+  const canManageSystem = ['ADMIN', 'PRINCIPAL'].includes(role); // /metrics/snapshot is manage_system-gated
 
   const [days, setDays] = useState<number>(30);
   const [card, setCard] = useState<Scorecard | null>(null);
@@ -38,7 +39,7 @@ export default function Analytics() {
       metricsApi.scorecard(days),
       metricsApi.faculty(days),
       metricsApi.departments(days),
-      metricsApi.forecast(Math.max(4, Math.round(days / 7))),
+      metricsApi.forecast(Math.max(7, Math.min(120, days))),
       metricsApi.riskTrend(Math.max(30, days)),
     ]);
     setCard(c);
@@ -111,11 +112,12 @@ export default function Analytics() {
                 void load();
               });
             }}
-            disabled={busy === 'snap' || !canExport}
+            disabled={busy === 'snap' || !canManageSystem}
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300"
           >
             <Camera className="h-3.5 w-3.5" /> record snapshot
           </button>
+          {!canManageSystem && <span className="text-[11px] text-slate-400">snapshots are written by the 15-min sweep (Principal/Admin may force one)</span>}
         </div>
       </header>
 
@@ -166,7 +168,9 @@ export default function Analytics() {
               </h2>
               <div className="mt-3 h-56">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={fc?.points ?? []}>
+                  <BarChart
+                    data={(fc?.expected_completions_by_week ?? []).map((p) => ({ ...p, week: p.week.replace('week_of_', 'w/') }))}
+                  >
                     <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                     <XAxis dataKey="week" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
@@ -176,8 +180,10 @@ export default function Analytics() {
                 </ResponsiveContainer>
               </div>
               <p className="mt-2 text-[11px] text-slate-400">
-                Expected misses from the risk engine: {num(card.risk.projected_misses)} · mean confidence {num(Math.round(card.risk.mean_confidence * 100), '%')}
+                Likely to miss the deadline: <span className="font-medium text-rose-600">{fc?.likely_to_miss ?? '—'}</span> of {fc?.open_tasks ?? '—'} open · within horizon{' '}
+                {fc?.within_horizon ?? '—'} · engine's expected misses {num(card.risk.projected_misses)}
               </p>
+              {fc && <p className="mt-1 text-[11px] text-slate-400">Method: {fc.method} · {fc.capacity_note}</p>}
             </div>
 
             <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">

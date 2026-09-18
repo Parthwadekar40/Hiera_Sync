@@ -83,4 +83,4 @@ Interpretation: below ~120 tasks the heuristic is competitive or ahead, and trai
 | Analytics | Two hand-rolled endpoints computed on read | Scorecard + faculty + forecast + department rollup + exports with published formulas |
 | RBAC | Inline `check_role([...])` per route | Capability matrix as data, 10 roles × 16 capabilities |
 | Runs offline? | **No** — `init_firebase()` re-raised and the app died at boot without GCP credentials | Yes — driver-selectable store; Firestore for production, embedded for dev/CI/demo |
-| Tests | None | 44 tests (store, engine, notify, approvals, API, benchmark metrics) + e2e acceptance script |
+| Tests | None | 48 tests (store, engine, notify, approvals, API, benchmark metrics) + e2e acceptance script |

@@ -19,7 +19,7 @@
 
 **Objectives closure (page 6 → page 23 claim):** O1 centralized workspace ✅ · O2 two-stage approvals with decision logs ✅ · O3 follow-up automation (in-app + daily 8 AM + deadline alerts) ✅ · O4 AI assistance & risk engine (risk, priority, assistant, report generator) ✅ · O5 analytics & one-click reports ✅.
 
-**What v2 added beyond the deck:** live SMTP/Twilio/Meta-WhatsApp delivery with consent + policy routing (deck listed these as future scope), a reproducible benchmark instead of an unmeasured "better than ML" claim, 44 unit/API tests + an acceptance harness, and an offline-capable persistence driver.
+**What v2 added beyond the deck:** live SMTP/Twilio/Meta-WhatsApp delivery with consent + policy routing (deck listed these as future scope), a reproducible benchmark instead of an unmeasured "better than ML" claim, 48 unit/API tests + an acceptance harness, and an offline-capable persistence driver.
 
 **Known limits, stated plainly** (`docs/05 §6`): calibrated heuristics rather than a learned model (a supervised head wins once a department has ≥1 semester of history — the data to train it is being collected now); the embedded store is single-writer and dev-oriented; WhatsApp business-initiated messages need Meta-approved templates; PDF rendering of reports is still CSV/JSON.
 

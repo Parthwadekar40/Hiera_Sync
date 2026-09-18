@@ -137,7 +137,7 @@ def export(
             for e in d.get("audit", []) or []:
                 rows.append({"approval_id": d.get("id"), "title": d.get("title"), "kind": d.get("kind"), **{k: v for k, v in e.items() if k != "hash"}, "hash": (e.get("hash") or "")[:16]})
         payload, filename = _render(rows, format, f"hierasync-audit-{datetime.utcnow():%Y%m%d}")
-    else:  # tasks
+    elif kind == "tasks":
         tasks = []
         ctx = R.build_context(db)
         for s in db.collection("tasks").stream():
@@ -162,6 +162,11 @@ def export(
                 }
             )
         payload, filename = _render(tasks, format, f"hierasync-tasks-{datetime.utcnow():%Y%m%d}")
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown export kind '{kind}'. Choose from: scorecard, faculty, tasks, approvals, departments, audit.",
+        )
 
     media = "text/csv" if format == "csv" else "application/json"
     return Response(
