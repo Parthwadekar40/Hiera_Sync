@@ -66,7 +66,10 @@ Copy `backend/.env.example` → `backend/.env`. Frequently changed keys:
 | `DEADLINE_REMINDER_TIMES` | `08:00` | the deck's **8 AM** reminder; accepts several times if they share a minute (`08:00,17:00`) |
 | `WEEKLY_REPORT_TIME` | `Mon:07:00` | auto-generated report (day:time) |
 | `OVERDUE_ESCALATION_TIME`, `RETENTION_PURGE_TIME` | `09:00`, `02:00` | escalation ladder, purge (both campus-local) |
-| `NOTIFY_DEV_MODE`, `NOTIFY_DEV_OUTBOX_DIR` | true, `./var/outbox` | writes `email-*.html/.txt`, `sms-*.txt`, `whatsapp-*.txt` |
+| `NOTIFY_DEV_MODE`, `NOTIFY_DEV_OUTBOX_DIR` | true, `var/outbox` | writes the rendered messages under `var/outbox/{email,sms,whatsapp}/` as dated files |
+| `OUTBOX_POLL_SECONDS`, `OUTBOX_BATCH_SIZE` | 60, 50 | worker cadence and per-pass batch |
+| `NOTIFY_MAX_ATTEMPTS`, `NOTIFY_RETRY_BASE_SECONDS` | 4, 60 | retry ladder `60s·2^n` + jitter, capped at 1 h |
+| `NOTIFY_DEDUPE_MINUTES`, `NOTIFY_RATE_LIMIT_PER_MINUTE` | 360, 40 | repeat suppression and provider throttle |
 | `SMTP_HOST/PORT/USERNAME/PASSWORD/FROM/USE_TLS` | – | Gmail/Outlook/SES relay (app password) |
 | `TWILIO_ACCOUNT_SID/TOKEN/FROM` | – | SMS (sandbox number works) |
 | `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_TEMPLATE_*` | – | Meta WhatsApp Cloud API |
