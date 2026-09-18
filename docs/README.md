@@ -8,7 +8,8 @@ Source of truth for scope and wording: **`HieraSync_AI_30_Slide_Master_Presentat
 titled "30 Slide Master" because several pages carry more than one slide. Every document below cites the page(s) it
 implements; [`08 §2`](08_conclusion_and_bibliography.md#2-the-decks-own-roadmap--this-document-set) maps the deck's own
 10-section roadmap onto this set, and `07 §5` is the full slide→artifact matrix.
-Re-extract the deck text at any time with `backend/.venv/bin/python - <<'PY' … pypdf … PY` (see `docs/06`).
+Re-extract the deck text if you need to re-check a quotation:
+`backend/.venv/bin/python -c "from pypdf import PdfReader; r=PdfReader('HieraSync_AI_30_Slide_Master_Presentation_v2.pdf'); print('\n\n'.join(f'=== PAGE {i} ===\n'+(p.extract_text() or '') for i,p in enumerate(r.pages,1)))" > /tmp/deck.txt`
 
 | Doc | Covers (deck) | Report chapter it feeds |
 |---|---|---|
