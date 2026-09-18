@@ -19,6 +19,15 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
+@pytest.fixture(autouse=True)
+def _no_quiet_hours_window(monkeypatch):
+    """The default 22:30-07:00 IST window defers non-critical sends, which made delivery tests
+    depend on the wall clock. Tests that care about deferral set the window themselves."""
+    from app.config import settings as settings_mod
+
+    monkeypatch.setattr(settings_mod.settings, "DEFAULT_QUIET_HOURS", "", raising=False)
+
+
 @pytest.fixture(scope="function")
 def store():
     from app.db.store import DocumentStore

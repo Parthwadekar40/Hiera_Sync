@@ -15,7 +15,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 `STATIC_DIR` is read relative to the process cwd, so always start uvicorn **from `backend/`** (`.env` is read from the cwd too). With `frontend/dist` present and `STATIC_DIR=../frontend/dist`, `http://localhost:8000/` serves the React app itself; otherwise the SPA runs on `:5173` via `npm run dev`.
 
-First boot seeds a deterministic demo corpus (`SEED_DEMO_DATA=true`, 2 departments, 16 users covering **all 10 roles**, 28 tasks across every risk band, 8 approvals at different stages, events, goals, preferences) and auto-calibrates risk weights if none exist.
+First boot seeds a deterministic demo corpus (`SEED_DEMO_DATA=true`, 2 departments, 18 users covering **all 10 roles**, 28 tasks across every risk band, 8 approvals at different stages, events, goals, preferences) and auto-calibrates risk weights if none exist.
 
 ```bash
 cd frontend && npm install && npm run dev     # http://localhost:5173 (proxies /api -> :8000)
@@ -31,8 +31,10 @@ Served by the same origin (the SPA is picked up from `STATIC_DIR`): `/dashboard`
 |---|---|---|
 | Principal | `principal@demo.hierasync.in` | approve at stage 2, institute scorecard, calibrate weights |
 | HOD | `hod.aiml@hierasync.demo` | assign a task, approve stage 1, department CSV export |
-| Faculty | `neha.gurnani@hierasync.demo` | raise a leave request, update subtasks, check own risk |
-| Staff / TA / Lab Asst / Student Rep | `ravi.sharma@…`, `arjun.mehta@…`, `lab.assistant@…`, `student.rep@…` | event-only / self-task scopes |
+| Faculty | `neha.gurnani@hierasync.demo` | raise a leave request, update subtasks, check own risk (she sits in **dept_it**) |
+| HOD (Information Technology) | `hod.it@hierasync.demo` | the second department: its own stage-1 queue (code **IT**) |
+| Teacher | `teacher@hierasync.demo` | the 10th role — subtasks only, self-scope analytics |
+| TA / Lab Asst / Staff / Student Rep / Student | `ta@…`, `lab.assistant@…`, `office.staff@…`, `student.rep@…`, `student@…` | self-task and event-only scopes |
 
 ## 3. Verification suite
 
@@ -66,7 +68,8 @@ Copy `backend/.env.example` → `backend/.env`. Frequently changed keys:
 | `DEADLINE_REMINDER_TIMES` | `08:00` | the deck's **8 AM** reminder; accepts several times if they share a minute (`08:00,17:00`) |
 | `WEEKLY_REPORT_TIME` | `Mon:07:00` | auto-generated report (day:time) |
 | `OVERDUE_ESCALATION_TIME`, `RETENTION_PURGE_TIME` | `09:00`, `02:00` | escalation ladder, purge (both campus-local) |
-| `NOTIFY_DEV_MODE`, `NOTIFY_DEV_OUTBOX_DIR` | true, `var/outbox` | writes the rendered messages under `var/outbox/{email,sms,whatsapp}/` as dated files |
+| `NOTIFY_DEV_OUTBOX_DIR` | `var/outbox` | where simulated deliveries are written as dated files under `{email,sms,whatsapp}/`; there is **no enable flag** — a provider goes live the moment its credentials exist |
+| `DEFAULT_QUIET_HOURS` | `22:30-07:00` | window in which non-critical e-mail/SMS/WhatsApp are deferred (per-user override in preferences) |
 | `OUTBOX_POLL_SECONDS`, `OUTBOX_BATCH_SIZE` | 60, 50 | worker cadence and per-pass batch |
 | `NOTIFY_MAX_ATTEMPTS`, `NOTIFY_RETRY_BASE_SECONDS` | 4, 60 | retry ladder `60s·2^n` + jitter, capped at 1 h |
 | `NOTIFY_DEDUPE_MINUTES`, `NOTIFY_RATE_LIMIT_PER_MINUTE` | 360, 40 | repeat suppression and provider throttle |
@@ -78,7 +81,7 @@ Full annotated list: `backend/.env.example`. Anything set wins over `.env`, whic
 
 ### Going live, channel by channel
 
-1. **E-mail (10 min).** `NOTIFY_DEV_MODE=false`, `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_SECURITY=starttls`, `SMTP_USERNAME=you@gmail.com`, `SMTP_PASSWORD=<16-char app password>` (Google requires app passwords with 2FA; "less secure apps" is gone), `MAIL_FROM=you@gmail.com`, `MAIL_FROM_NAME="HieraSync AI"`, `MAIL_SUBJECT_PREFIX=[HieraSync]`. Port 465 hosts use `SMTP_SECURITY=ssl`. Verify: `curl -X POST localhost:8000/api/v1/channels/test -H "Authorization: Bearer <jwt>" -H 'Content-Type: application/json' -d '{"channels":["email"]}'`.
+1. **E-mail (10 min).** `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_SECURITY=starttls`, `SMTP_USERNAME=you@gmail.com`, `SMTP_PASSWORD=<16-char app password>` (Google requires app passwords with 2FA; "less secure apps" is gone), `MAIL_FROM=you@gmail.com`, `MAIL_FROM_NAME="HieraSync AI"`, `MAIL_SUBJECT_PREFIX=[HieraSync]`. Port 465 hosts use `SMTP_SECURITY=ssl`. Verify: `curl -X POST localhost:8000/api/v1/channels/test -H "Authorization: Bearer <jwt>" -H 'Content-Type: application/json' -d '{"channels":["email"]}'`.
 2. **SMS.** Twilio trial: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER=+1…` (trial sandbox auto-targets the verified number). Recipients need a `phone` in E.164 — set in the profile or `PUT /api/v1/channels/preferences`.
 3. **WhatsApp.** Meta WhatsApp Cloud API: app → WhatsApp product → get `PHONE_NUMBER_ID` + permanent token; set and **submit the HieraSync message templates for approval**. Business-initiated messages must use an approved template, so `WHATSAPP_TEMPLATES` (a JSON map of message kind → template name, e.g. `{"deadline_risk":"risk_alert","default":"generic_alert"}`) has to reference templates Meta has approved before the provider is reported live. `WHATSAPP_PROVIDER=twilio` is the alternative if you already have a Twilio WhatsApp sandbox. Recipients must set `whatsapp_opt_in=true`.
 4. **Firestore.** `DATABASE_BACKEND=firestore` + credentials → same code, no migration script needed (`scripts/export_sqlite_to_firestore.py` is optional for an existing demo corpus).
@@ -86,7 +89,7 @@ Full annotated list: `backend/.env.example`. Anything set wins over `.env`, whic
 ## 5. Docker
 
 ```bash
-cp backend/.env.example backend/.env    # set NOTIFY_DEV_MODE=true to stay credential-free
+cp backend/.env.example backend/.env    # credential-free by default: unconfigured channels land in the dev outbox
 docker compose up --build               # :8000 API+SPA, :8080 preview of the notification outbox
 ```
 

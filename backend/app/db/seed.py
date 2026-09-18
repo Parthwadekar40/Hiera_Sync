@@ -21,7 +21,7 @@ SEED_MARKER = "seed_meta"
 
 FACULTY_NAMES = [
     ("Mrs. Neha Gurnani", "Assistant Professor", "AI/ML"),
-    ("Dr. Animesh Tayal", "Professor", "Data Science"),
+    ("Dr. Vikram Sinha", "Professor", "Data Science"),
     ("Dr. Bhushan Mahendra Manjre", "Associate Professor", "Computer Vision"),
     ("Ms. Sweta Arun Bokade", "Assistant Professor", "NLP"),
     ("Mr. Rohit Deshmukh", "Assistant Professor", "IoT & Embedded"),
@@ -122,6 +122,22 @@ def build_dataset(now: datetime) -> Dict[str, List[Dict[str, Any]]]:
             "phone": "+919850112233",
         },
     ]
+    # A second HOD so the Information Technology department has a real stage-1 approver:
+    # _approver_for() routes by departments/<id>.hod_id, and that user must hold approve_hod.
+    hod_it_id = "usr_hod_it"
+    users.append(
+        {
+            "id": hod_it_id,
+            "name": "Dr. Prashant Deshpande",
+            "email": "hod.it@hierasync.demo",
+            "role": "HOD",
+            "department_id": dept2["id"],
+            "designation": "Head of Department",
+            "status": "ACTIVE",
+            "phone": "+919850223344",
+        }
+    )
+
     for i, (name, desig, area) in enumerate(FACULTY_NAMES):
         slug = name.lower().replace("mrs. ", "").replace("dr. ", "").replace("ms. ", "").replace("mr. ", "").replace(" ", ".")
         users.append(
@@ -140,6 +156,21 @@ def build_dataset(now: datetime) -> Dict[str, List[Dict[str, Any]]]:
                 "phone": rnd.choice(["+91981234560{}".format(i), "0981234561{}".format(i), "981234561{}".format(i)]),
             }
         )
+    # TEACHER is a distinct role from FACULTY in the deck's list of 10; it needs its own demo user
+    # so role-aware UI, RBAC and the alias map (PROFESSOR -> TEACHER) can be exercised by logging in.
+    users.append(
+        {
+            "id": "usr_teacher",
+            "name": "Dr. Kavita Ramesh Joshi",
+            "email": "teacher@hierasync.demo",
+            "role": "TEACHER",
+            "department_id": dept["id"],
+            "designation": "Senior Teacher",
+            "area_of_interest": "Compiler Design",
+            "status": "ACTIVE",
+            "phone": "+919876543210",
+        }
+    )
     users.append({"id": "usr_ta", "name": "Ayush Pande", "email": "ta@hierasync.demo", "role": "TA", "department_id": dept["id"], "designation": "Project TA", "status": "ACTIVE", "phone": "+919899000111"})
     users.append({"id": "usr_lab", "name": "Sachin Uike", "email": "lab.assistant@hierasync.demo", "role": "LAB_ASSISTANT", "department_id": dept["id"], "designation": "Lab Assistant", "status": "ACTIVE"})
     users.append({"id": "usr_staff", "name": "Meena Kakade", "email": "office.staff@hierasync.demo", "role": "STAFF", "department_id": dept["id"], "designation": "Department Secretary", "status": "ACTIVE"})
@@ -153,7 +184,7 @@ def build_dataset(now: datetime) -> Dict[str, List[Dict[str, Any]]]:
 
     # HOD of record + principal id references
     dept["hod_id"] = hod_id
-    dept2["hod_id"] = "usr_fac_4"
+    dept2["hod_id"] = hod_it_id
 
     tasks: List[Dict[str, Any]] = []
     faculty = [u for u in users if u["role"] in ("FACULTY", "TA")]
