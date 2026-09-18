@@ -24,7 +24,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 * API + interactive docs → `http://localhost:8000/docs` · health → `/health` · pointer → `/`
 * First boot seeds a deterministic demo corpus (2 departments, 16 users covering **all 10 roles**, 28 tasks spanning
   every risk band, 8 approvals at different stages, events, goals, channel preferences) and auto-calibrates risk weights.
-* Sign in as `principal@demo.hierasync.in` / `hod.aiml@hierasync.demo` / `neha.gurnani@hierasync.demo` — password `password123`.
+* Sign in as `principal@demo.hierasync.in` / `hod.aiml@hierasync.demo` / `neha.gurnani@hierasync.demo` — password `HierSync@123`.
 
 ```bash
 cd frontend && npm install && npm run dev              # http://localhost:5173  (/api proxied to :8000)

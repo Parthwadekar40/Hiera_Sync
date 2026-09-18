@@ -15,13 +15,20 @@ import {
   Sliders,
   Sparkles,
 } from 'lucide-react';
-import { riskApi, type RiskAssessment, type RiskBoard } from '../api/platform';
+import { riskApi, type RiskAssessment, type RiskBoard, type RiskBoardTask } from '../api/platform';
 import { useAuth } from '../contexts/AuthContext';
 
 const BAND_STYLE: Record<string, string> = {
   HIGH: 'bg-rose-500/15 text-rose-300 ring-rose-500/30',
   MEDIUM: 'bg-amber-500/15 text-amber-300 ring-amber-500/30',
   LOW: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30',
+};
+
+/** `progress` arrives as "35%" from the v1 field and as a number from the deck field. */
+const pct = (v: string | number | null | undefined) => {
+  if (typeof v === 'number') return Math.round(v);
+  const n = Number.parseInt(String(v ?? '0'), 10);
+  return Number.isNaN(n) ? 0 : n;
 };
 
 const dayShift = (iso: string | null | undefined, days: number) => {
@@ -38,7 +45,7 @@ export default function RiskCenter() {
   const canGovern = ['ADMIN', 'PRINCIPAL', 'HOD'].includes(role);
 
   const [board, setBoard] = useState<RiskBoard | null>(null);
-  const [selected, setSelected] = useState<RiskAssessment | null>(null);
+  const [selected, setSelected] = useState<(RiskAssessment & { title?: string }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'board' | 'explain' | 'simulate' | 'governance'>('board');
@@ -75,27 +82,28 @@ export default function RiskCenter() {
     });
   }, [load]);
 
-  const items = useMemo(() => board?.items ?? [], [board]);
-  const totals = board?.summary;
+  const tasks = useMemo<RiskBoardTask[]>(() => board?.tasks ?? [], [board]);
+  const bands = board?.bands;
+  const meanRisk = tasks.length ? tasks.reduce((a, t) => a + (t.assessment?.risk_score ?? 0), 0) / tasks.length : 0;
 
   const openExplain = async (taskId: string) => {
     setTab('explain');
     try {
       const detail = await riskApi.score(taskId);
-      setSelected(detail);
+      setSelected({ ...detail, title: tasks.find((t) => t.id === taskId)?.title });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Scoring failed');
     }
   };
 
   const runSim = async () => {
-    const item = items.find((i) => i.task_id === selected?.task_id) ?? items[0];
+    const item = tasks.find((t) => t.id === selected?.task_id) ?? tasks[0];
     if (!item) return;
     setSimBusy(true);
     try {
       const overrides: Record<string, unknown> = { deadline: dayShift(item.deadline ?? null, shift) };
       if (progress !== null) overrides.progress = progress;
-      setSim(await riskApi.whatIf({ task_id: item.task_id, overrides }));
+      setSim(await riskApi.whatIf({ task_id: item.id, overrides }));
     } finally {
       setSimBusy(false);
     }
@@ -156,11 +164,11 @@ export default function RiskCenter() {
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
-          { k: 'Open obligations', v: totals?.open ?? '—' },
-          { k: 'HIGH', v: totals?.HIGH ?? '—', tone: 'text-rose-600' },
-          { k: 'MEDIUM', v: totals?.MEDIUM ?? '—', tone: 'text-amber-600' },
-          { k: 'LOW', v: totals?.LOW ?? '—', tone: 'text-emerald-600' },
-          { k: 'Mean risk', v: totals ? totals.mean_risk.toFixed(1) : '—' },
+          { k: 'Scored open tasks', v: board ? String(board.count) : '—' },
+          { k: 'HIGH', v: bands ? String(bands.HIGH) : '—', tone: 'text-rose-600' },
+          { k: 'MEDIUM', v: bands ? String(bands.MEDIUM) : '—', tone: 'text-amber-600' },
+          { k: 'LOW', v: bands ? String(bands.LOW) : '—', tone: 'text-emerald-600' },
+          { k: 'Mean risk', v: board ? meanRisk.toFixed(1) : '—' },
         ].map((c) => (
           <div key={c.k} className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
             <div className="text-xs uppercase tracking-wide text-slate-400">{c.k}</div>
@@ -206,39 +214,42 @@ export default function RiskCenter() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
-              {items.length === 0 && (
+              {tasks.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
                     {loading ? 'Scoring open obligations…' : 'Nothing open — the department is on track.'}
                   </td>
                 </tr>
               )}
-              {items.map((it) => (
-                <tr key={it.task_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+              {tasks.map((it) => {
+                const a = it.assessment ?? ({} as RiskAssessment);
+                return (
+                <tr key={it.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
                   <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{it.title}</td>
-                  <td className="px-4 py-3 text-slate-500">{it.assignee ?? '—'}</td>
+                  <td className="px-4 py-3 text-slate-500">{it.assigned ?? '—'}</td>
                   <td className="px-4 py-3 text-slate-500">
                     {it.deadline ? String(it.deadline).slice(0, 10) : '—'}
-                    {typeof it.days_left === 'number' && (
-                      <span className={`ml-2 text-xs ${it.days_left < 0 ? 'text-rose-500' : 'text-slate-400'}`}>
-                        {it.days_left < 0 ? `${Math.abs(it.days_left)}d late` : `${it.days_left}d left`}
+                    {typeof a.days_left === 'number' && (
+                      <span className={`ml-2 text-xs ${a.days_left < 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+                        {a.days_left < 0 ? `${Math.abs(Math.round(a.days_left))}d late` : `${Math.round(a.days_left)}d left`}
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-slate-500">{Math.round(Number((it as unknown as { progress_pct?: number }).progress_pct ?? 0))}%</td>
+                  <td className="px-4 py-3 tabular-nums text-slate-500">{pct(it.progress)}%</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${BAND_STYLE[it.risk_level]}`}>
-                      {it.risk_score.toFixed(1)} · {it.risk_level}
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${BAND_STYLE[a.risk_level ?? 'LOW']}`}>
+                      {(a.risk_score ?? 0).toFixed(1)} · {a.risk_level}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{(it.drivers ?? []).slice(0, 2).join(' · ') || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-slate-500">{(a.drivers ?? []).slice(0, 2).join(' · ') || '—'}</td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => void openExplain(it.task_id)} className="rounded-md px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-500/10">
+                    <button onClick={() => void openExplain(it.id)} className="rounded-md px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-500/10">
                       Explain
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </motion.div>
@@ -261,14 +272,21 @@ export default function RiskCenter() {
                   </span>
                 </div>
                 {selected.explanation && <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{selected.explanation}</p>}
+                <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500">
+                  <span>ETA: {selected.projected_completion ?? '—'}</span>
+                  {typeof selected.eta_days === 'number' && <span>≈ {selected.eta_days.toFixed(1)} working day(s)</span>}
+                  {typeof selected.linear_score === 'number' && <span>linear fusion would say {selected.linear_score.toFixed(1)}</span>}
+                  {selected.at_risk && <span className="font-semibold text-rose-500">at-risk → CRITICAL escalation</span>}
+                </div>
                 <div className="mt-5 space-y-3">
                   {selected.factors.map((f) => (
-                    <div key={f.factor}>
+                    <div key={f.key}>
                       <div className="flex items-baseline justify-between text-xs">
-                        <span className="font-medium text-slate-700 dark:text-slate-200">{f.label ?? f.factor}</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-200">{f.label ?? f.key}</span>
                         <span className="tabular-nums text-slate-400">
                           sub {f.sub_score.toFixed(0)} × w {f.weight} → {f.contribution >= 0 ? '+' : ''}
                           {f.contribution.toFixed(1)}
+                          {typeof f.share_of_risk === 'number' ? ` · ${Math.min(100, Math.round(f.share_of_risk))}% of risk` : ''}
                         </span>
                       </div>
                       <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -324,9 +342,9 @@ export default function RiskCenter() {
                 onChange={(e) => void openExplain(e.target.value)}
               >
                 <option value="">— choose —</option>
-                {items.map((i) => (
-                  <option key={i.task_id} value={i.task_id}>
-                    {i.title} ({i.risk_score.toFixed(0)})
+                {tasks.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.title} ({(t.assessment?.risk_score ?? 0).toFixed(0)})
                   </option>
                 ))}
               </select>
@@ -443,8 +461,8 @@ export default function RiskCenter() {
             </div>
             {!bench ? (
               <p className="mt-3 text-xs text-slate-500">
-                Runs the synthetic-corpus comparison in-process (<code>app/engine/benchmarks.py</code>). Numbers match{' '}
-                <code>docs/benchmark_results.json</code>.
+                Runs the synthetic-corpus comparison in-process (<code>app/engine/benchmarks.py</code>). The committed n=500 run lives in{' '}
+                <code>docs/benchmark_results.json</code>; this button re-runs it live at n=240.
               </p>
             ) : (
               <>
@@ -458,17 +476,25 @@ export default function RiskCenter() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {bench.metrics.map((m) => (
-                      <tr key={m.model} className={m.model.startsWith('hierasync') ? 'font-semibold text-indigo-600 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300'}>
-                        <td className="py-1">{m.model}</td>
-                        <td className="py-1 text-right tabular-nums">{m.auc.toFixed(3)}</td>
-                        <td className="py-1 text-right tabular-nums">{m.precision_at_alert_budget.toFixed(3)}</td>
-                        <td className="py-1 text-right tabular-nums">{(m.flag_rate * 100).toFixed(0)}%</td>
-                      </tr>
-                    ))}
+                    {Object.entries(bench.results)
+                      .sort((a, b) => b[1].precision_at_alert_budget - a[1].precision_at_alert_budget)
+                      .map(([name, m]) => (
+                        <tr key={name} className={name.startsWith('HieraSync') ? 'font-semibold text-indigo-600 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300'}>
+                          <td className="py-1 pr-2">{name}</td>
+                          <td className="py-1 text-right tabular-nums">{m.roc_auc.toFixed(3)}</td>
+                          <td className="py-1 text-right tabular-nums">{m.precision_at_alert_budget.toFixed(3)}</td>
+                          <td className="py-1 text-right tabular-nums">{(m.flag_rate * 100).toFixed(0)}%</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
-                <p className="mt-3 text-xs text-slate-500">{bench.leaderboard?.note}</p>
+                <p className="mt-3 text-xs text-slate-500">
+                  Best AUC here: <span className="font-medium">{bench.best}</span> — this engine ranks #{bench.our_rank}. At an equal alert
+                  budget it is the most precise triage tool, and it needs no labelled history;{' '}
+                  {bench.calibration && bench.calibration.samples > 0
+                    ? `weight calibration on ${bench.calibration.samples} closed tasks moved AUC ${bench.calibration.auc_before.toFixed(3)} → ${bench.calibration.auc_after.toFixed(3)}.`
+                    : 'no labelled history yet, so calibration is idle.'}
+                </p>
               </>
             )}
           </div>

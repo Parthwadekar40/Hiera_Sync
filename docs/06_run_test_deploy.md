@@ -19,7 +19,7 @@ First boot seeds a deterministic demo corpus (`SEED_DEMO_DATA=true`, 2 departmen
 cd frontend && npm install && npm run dev     # http://localhost:5173 (proxies /api -> :8000)
 ```
 
-## 2. Demo logins (password `password123`, override with `DEMO_PASSWORD`)
+## 2. Demo logins (password `HierSync@123`, override with `DEMO_PASSWORD`)
 
 | Role | E-mail | Try this |
 |---|---|---|
@@ -65,7 +65,7 @@ Full annotated list: `backend/.env.example`. Anything set wins over `.env`, whic
 
 ### Going live, channel by channel
 
-1. **E-mail (10 min).** `NOTIFY_DEV_MODE=false`, `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USE_TLS=true`, `SMTP_USERNAME=you@gmail.com`, `SMTP_PASSWORD=<16-char app password>` (Google requires app passwords with 2FA; "less secure apps" is gone), `SMTP_FROM="HieraSync <you@gmail.com>"`. Verify: `curl -X POST localhost:8000/api/v1/channels/test -d '{"user_id":"usr_faculty","channel":"email"}' -H "Authorization: Bearer <jwt>"`.
+1. **E-mail (10 min).** `NOTIFY_DEV_MODE=false`, `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USE_TLS=true`, `SMTP_USERNAME=you@gmail.com`, `SMTP_PASSWORD=<16-char app password>` (Google requires app passwords with 2FA; "less secure apps" is gone), `SMTP_FROM="HieraSync <you@gmail.com>"`. Verify: `curl -X POST localhost:8000/api/v1/channels/test -H "Authorization: Bearer <jwt>" -H 'Content-Type: application/json' -d '{"channels":["email"]}'`.
 2. **SMS.** Twilio trial: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER=+1…` (trial sandbox auto-targets the verified number). Recipients need a `phone` in E.164 — set in the profile or `PUT /api/v1/channels/preferences`.
 3. **WhatsApp.** Meta WhatsApp Cloud API: app → WhatsApp product → get `PHONE_NUMBER_ID` + permanent token; set `WHATSAPP_VERIFY_TOKEN` to any string, expose `GET/POST /api/v1/channels/whatsapp/webhook` to Meta's callback URL, and **submit the HieraSync message templates for approval**. Business-initiated messages must use an approved template, so `WHATSAPP_TEMPLATE_HIGH` / `_MEDIUM` / `_LOW` have to exist before the provider is reported live. Recipients must set `whatsapp_opt_in=true`.
 4. **Firestore.** `DATABASE_BACKEND=firestore` + credentials → same code, no migration script needed (`scripts/export_sqlite_to_firestore.py` is optional for an existing demo corpus).
@@ -77,7 +77,7 @@ cp backend/.env.example backend/.env    # set NOTIFY_DEV_MODE=true to stay crede
 docker compose up --build               # :8000 API+SPA, :8080 preview of the notification outbox
 ```
 
-The `outbox-preview` service is a static file server over the mounted `backend/var/outbox` — open `http://localhost:8080` during a defence demo to show real rendered messages. The outbox directory is now a **named volume** (`hierasync-outbox`) so a container restart cannot orphan queued messages.
+The `outbox-preview` service is a static file server over the mounted `backend/var/outbox` — open `http://localhost:8080` during a defence demo to show real rendered messages. The whole `backend/var` tree is a **named volume** (`hierasync-var`) so a container restart cannot orphan queued messages or the embedded store; `web` (profile `prod`) serves the built SPA through nginx with `/api` proxied, and `dev` (profile `dev`) runs Vite with HMR on :5173.
 
 ## 6. Test / production notes
 

@@ -35,19 +35,23 @@ export default function AutomationCenter() {
   const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [rows, setRows] = useState<ChannelRow[]>([]);
   const [jobs, setJobs] = useState<JobSpec[]>([]);
+  const [jobsMeta, setJobsMeta] = useState<{ scheduler_enabled: boolean; timezone: string }>({ scheduler_enabled: true, timezone: '' });
   const [tab, setTab] = useState<'queue' | 'ledger' | 'feed'>('queue');
   const [feed, setFeed] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [ledger, setLedger] = useState<Array<Record<string, unknown>>>([]);
+  const [artifacts, setArtifacts] = useState<Array<{ name: string; channel: string; modified: string }>>([]);
   const sourceRef = useRef<EventSource | null>(null);
 
   const loadAll = useCallback(async () => {
     const [s, p, o, j] = await Promise.all([channelsApi.status(), channelsApi.preferences(), channelsApi.outbox(40), channelsApi.jobs()]);
     setStatus(s);
     setPrefs(p);
-    setRows(o.rows ?? []);
+    setRows(o.items ?? []);
+    setArtifacts(o.dev_artifacts ?? []);
     setJobs(j.jobs ?? []);
+    setJobsMeta({ scheduler_enabled: j.scheduler_enabled, timezone: j.timezone });
   }, []);
 
   useEffect(() => {
@@ -101,7 +105,7 @@ export default function AutomationCenter() {
     </label>
   );
 
-  const q = status?.queue;
+  const q = status?.outbox?.by_status;
   const sev = (['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const).map((s) => ({ s, chans: status?.policy?.[s] ?? [] }));
 
   return (
@@ -111,7 +115,7 @@ export default function AutomationCenter() {
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Notification Automation</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             In-app · e-mail · SMS · WhatsApp, driven by the scheduler and the risk engine. Timezone {status?.timezone ?? '—'}
-            {status && !status.scheduler_enabled ? ' · scheduler OFF (jobs run on demand only)' : ''}
+            {jobsMeta && !jobsMeta.scheduler_enabled ? ' · scheduler OFF (jobs run on demand only)' : ''}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -134,23 +138,26 @@ export default function AutomationCenter() {
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {(['inapp', 'email', 'sms', 'whatsapp'] as const).map((c) => {
           const info = status?.channels?.[c];
+          const configured = (info?.chain ?? []).filter((h) => h.configured).map((h) => h.provider);
           const Icon = CHANNEL_ICON[c];
           return (
             <div key={c} className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  <Icon className="h-4 w-4" /> {info?.label ?? c}
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase text-slate-800 dark:text-slate-100">
+                  <Icon className="h-4 w-4" /> {c}
                 </span>
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${
                     info?.live ? 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/30' : 'bg-slate-500/10 text-slate-500 ring-slate-500/30'
                   }`}
                 >
-                  {info?.live ? 'live' : 'outbox'}
+                  {info?.live ? 'live' : 'dev outbox'}
                 </span>
               </div>
-              <p className="mt-2 text-xs text-slate-500">{info?.detail ?? info?.reason ?? 'not configured'}</p>
-              <p className="mt-1 text-[11px] uppercase tracking-wide text-slate-400">{info?.provider ?? '—'}</p>
+              <p className="mt-2 text-xs text-slate-500">{info?.will_use ?? 'not configured'}</p>
+              <p className="mt-1 text-[11px] uppercase tracking-wide text-slate-400">
+                {info?.simulated_only ? 'previews only - add credentials to go live' : configured.length ? `configured: ${configured.join(', ')}` : 'in-app document store'}
+              </p>
             </div>
           );
         })}
@@ -161,10 +168,8 @@ export default function AutomationCenter() {
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Delivery queue</h2>
           <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
             {[
-              { k: 'pending', v: q?.pending },
-              { k: 'scheduled', v: q?.scheduled },
-              { k: 'retry', v: q?.retry },
-              { k: 'dead-letter', v: q?.dead },
+              { k: 'total', v: status?.outbox?.total },
+              ...Object.entries(q ?? {}).slice(0, 3).map(([k, v]) => ({ k, v })),
             ].map((x) => (
               <div key={x.k} className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
                 <div className="text-[11px] uppercase tracking-wide text-slate-400">{x.k}</div>
@@ -277,7 +282,7 @@ export default function AutomationCenter() {
               key={t.id}
               onClick={() => {
                 setTab(t.id as typeof tab);
-                if (t.id === 'ledger' && ledger.length === 0) void channelsApi.deliveries(50).then((r) => setLedger(r.rows ?? []));
+                if (t.id === 'ledger' && ledger.length === 0) void channelsApi.deliveries(50).then((r) => setLedger(r.items ?? []));
               }}
               className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium ${
                 tab === t.id ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300' : 'text-slate-500 hover:text-slate-800'
@@ -361,6 +366,16 @@ export default function AutomationCenter() {
                 ))}
               </tbody>
             </table>
+          )}
+          {tab === 'queue' && artifacts.length > 0 && (
+            <p className="mt-2 px-2 text-[11px] text-slate-400">
+              Simulated deliveries are written as real files for demos ({artifacts.length} artifact(s), newest:{' '}
+              {artifacts
+                .slice(0, 3)
+                .map((a) => a.name)
+                .join(', ')}
+              ).
+            </p>
           )}
           {tab === 'feed' && (
             <div className="px-2 py-3">
