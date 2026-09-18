@@ -8,6 +8,8 @@ from app.schemas.schemas import TaskCreate, TaskUpdate, TaskResponse, Subtask
 from app.auth.permissions import get_current_active_user, check_role
 from app.models.models import User, RoleEnum
 from app.api.v1.notifications import trigger_notification
+from app.engine import risk as R
+from app.db.compat import normalize_task
 
 router = APIRouter()
 
@@ -44,97 +46,38 @@ DEFAULT_TASKS = [
     }
 ]
 
-def calculate_task_risk(task: Dict[str, Any], faculty_workload: int) -> Dict[str, Any]:
+def _lightweight_context(task: Dict[str, Any], faculty_workload: int) -> R.RiskContext:
+    """Standalone scoring when no shared context is supplied (v1 call sites)."""
+    ctx = R.RiskContext()
+    key = str(task.get("assigned_id") or task.get("assigned") or "")
+    load = float(faculty_workload or 0)
+    ctx.workload[key] = int(load)
+    ctx.weighted_load[key] = load * R.priority_weight(task.get("priority"))
+    ctx.capacity[key] = 4.0
+    return ctx
+
+
+def calculate_task_risk(task: Dict[str, Any], faculty_workload: int = 0, ctx: Optional[R.RiskContext] = None) -> Dict[str, Any]:
+    """Heuristic AI deadline-risk engine (0-100, LOW/MEDIUM/HIGH).
+
+    Delegates to app.engine.risk (8 weighted, explainable factors) and writes the
+    fields the v1 UI reads: risk_score, risk_level, risk_factors - plus the
+    explanation, drivers, delay probability and recommended action from v2.
     """
-    AI-assisted heuristic deadline risk engine.
-    Calculates probability (0-100) of missing deadline.
-    """
-    if task.get("status") in ["Completed", "Awaiting Approval"]:
-        task["risk_score"] = 0
-        task["risk_level"] = "LOW"
-        task["risk_factors"] = ["Task is already completed or awaiting approval."]
-        return task
-
-    risk_score = 0
-    factors = []
-    
-    # Progress
-    progress_str = task.get("progress", "0%")
-    try:
-        progress = int(progress_str.replace("%", ""))
-    except ValueError:
-        progress = 0
-
-    # Deadline parsing
-    deadline_str = task.get("deadline", "")
-    days_left = 10  # default assumption if unparseable
-    if deadline_str:
-        try:
-            # Try ISO format
-            dt = datetime.fromisoformat(deadline_str.replace("Z", ""))
-            days_left = (dt - datetime.utcnow()).days
-        except ValueError:
-            try:
-                # Try "DD Month YYYY" format
-                dt = datetime.strptime(deadline_str, "%d %B %Y")
-                days_left = (dt - datetime.utcnow()).days
-            except ValueError:
-                try:
-                    # Try YYYY-MM-DD
-                    dt = datetime.strptime(deadline_str, "%Y-%m-%d")
-                    days_left = (dt - datetime.utcnow()).days
-                except ValueError:
-                    pass
-
-    # Rules
-    if days_left < 0:
-        risk_score += 90
-        factors.append(f"Task is overdue by {abs(days_left)} days.")
-    else:
-        if days_left <= 2:
-            risk_score += 50
-            factors.append(f"Only {days_left} days remaining.")
-        elif days_left <= 5:
-            risk_score += 30
-            factors.append(f"{days_left} days remaining.")
-            
-        # If low progress and little time
-        if progress < 50 and days_left <= 3:
-            risk_score += 25
-            factors.append(f"Progress is only {progress}%.")
-
-    # Priority modifier
-    priority = task.get("priority", "Medium").lower()
-    if priority == "high":
-        risk_score += 15
-        factors.append("High priority task leaves less margin for error.")
-        
-    # Workload
-    if faculty_workload > 3:
-        risk_score += 20
-        factors.append(f"Faculty workload is high ({faculty_workload} active tasks).")
-
-    # Estimate
-    effort = task.get("estimated_effort", "")
-    if effort:
-        factors.append(f"Estimated effort: {effort}.")
-
-    risk_score = min(max(risk_score, 5), 95)  # Cap between 5 and 95 unless completed
-    
-    if risk_score > 70:
-        level = "HIGH"
-    elif risk_score > 40:
-        level = "MEDIUM"
-    else:
-        level = "LOW"
-        
-    if risk_score <= 40 and not factors:
-        factors.append("Sufficient time and normal workload.")
-
-    task["risk_score"] = risk_score
-    task["risk_level"] = level
-    task["risk_factors"] = factors
+    assessment = R.assess(task, ctx or _lightweight_context(task, faculty_workload))
+    task["risk_score"] = assessment["risk_score"]
+    task["risk_level"] = assessment["risk_level"]
+    strong = [f["evidence"] for f in assessment["factors"] if f["sub_score"] >= 12]
+    task["risk_factors"] = strong or [assessment["explanation"]]
+    task["risk_drivers"] = assessment["drivers"]
+    task["risk_explanation"] = assessment["explanation"]
+    task["delay_probability"] = assessment["delay_probability"]
+    task["risk_confidence"] = assessment["confidence"]
+    task["risk_projected_completion"] = assessment["projected_completion"]
+    task["risk_recommended_action"] = (assessment["recommendations"] or [None])[0]
+    task["risk_assessment"] = assessment
     return task
+
 
 @router.get("/", response_model=List[TaskResponse])
 def get_tasks(
@@ -158,6 +101,8 @@ def get_tasks(
             if assignee:
                 workload_map[assignee] = workload_map.get(assignee, 0) + 1
 
+    shared_ctx = R.build_context(db, tasks=all_raw_tasks)
+
     for data in all_raw_tasks:
         # Secure isolation for faculty
         if current_user.role == RoleEnum.FACULTY:
@@ -174,7 +119,8 @@ def get_tasks(
         # Calculate dynamic risk
         assignee_key = data.get("assigned_id") or data.get("assigned")
         workload = workload_map.get(assignee_key, 0)
-        data = calculate_task_risk(data, workload)
+        data = calculate_task_risk(data, workload, ctx=shared_ctx)
+        data = normalize_task(data, assessment=data.get("risk_assessment"))
         
         # Trigger notifications for assigned user if applicable
         if data.get("assigned_id") and data.get("status") not in ["Completed", "Awaiting Approval"]:
@@ -215,7 +161,8 @@ def create_task(
     db_task['id'] = task_id
     db_task['created_at'] = datetime.utcnow().isoformat()
     
-    # Save to Firestore
+    # Save to Firestore (with the initial risk assessment persisted for badges)
+    db_task = normalize_task(db_task, assessment=R.assess(db_task, R.build_context(db, tasks=[db_task])))
     db.collection('tasks').document(task_id).set(db_task)
     
     # Audit Log
@@ -228,6 +175,20 @@ def create_task(
         "timestamp": datetime.utcnow().isoformat()
     })
     
+    initial_risk = float(db_task.get("risk_score") or 0)
+    if initial_risk >= 55 and task.assigned_id:
+        trigger_notification(
+            db,
+            task.assigned_id,
+            "DEADLINE RISK",
+            "Assigned task already at risk",
+            f"'{task.title}' was created with a risk score of {initial_risk:.0f}/100 "
+            f"({db_task.get('risk_level')}).\n{db_task.get('risk_explanation', '')}",
+            "/tasks",
+            "High",
+            "🟠",
+        )
+
     if task.assigned_id:
         trigger_notification(
             db, 

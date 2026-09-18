@@ -263,9 +263,17 @@ class TaskUpdate(BaseModel):
 class TaskResponse(TaskCreate):
     id: str
     created_at: Optional[str] = None
-    risk_score: Optional[int] = None
+    risk_score: Optional[float] = None
     risk_level: Optional[str] = None
     risk_factors: Optional[List[str]] = Field(default_factory=list)
+    risk_drivers: Optional[List[str]] = Field(default_factory=list)
+    risk_explanation: Optional[str] = None
+    risk_recommended_action: Optional[str] = None
+    delay_probability: Optional[float] = None
+    goal_id: Optional[str] = None
+    assignee_id: Optional[str] = None
+    progress_pct: Optional[float] = None
+    department_id: Optional[str] = None
     comments: Optional[List[TaskCommentResponse]] = Field(default_factory=list)
     attachments: Optional[List[TaskAttachmentResponse]] = Field(default_factory=list)
 
@@ -327,9 +335,11 @@ class AIPriorityItem(BaseModel):
     task_id: str
     title: str
     priority: str
-    risk_score: int
+    risk_score: float
     rank: int
     why: List[str]
+    risk_level: Optional[str] = None
+    recommendation: Optional[str] = None
 
 class HODActionItem(BaseModel):
     type: str # CRITICAL, HIGH RISK, APPROVAL, WORKLOAD
@@ -337,7 +347,7 @@ class HODActionItem(BaseModel):
     description: str
     target_id: Optional[str] = None
     target_route: Optional[str] = None
-    priority_level: int
+    priority_level: float
 
 class AIDashboardSummaryResponse(BaseModel):
     greeting: str

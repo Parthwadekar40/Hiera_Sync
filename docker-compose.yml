@@ -1,0 +1,85 @@
+# HieraSync AI - local development stack (docs/06_run_test_deploy.md)
+#
+#   cp backend/.env.example backend/.env      # then edit as needed
+#   docker compose up --build                 # API+SPA on :8000, outbox previews on :8080
+#
+# Runs with zero cloud credentials: NOTIFY_DEV_MODE=true writes real
+# email/SMS/WhatsApp previews to ./backend/var/outbox (mounted, persistent).
+services:
+  backend:
+    build: ./backend
+    container_name: hierasync-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_BACKEND: ${DATABASE_BACKEND:-sqlite}
+      SQLITE_PATH: /app/var/hierasync.db
+      STATIC_DIR: ""
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-change-me}
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000,http://localhost:8080
+      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
+      NOTIFY_TIMEZONE: ${NOTIFY_TIMEZONE:-Asia/Kolkata}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-password123}
+      NOTIFY_DEV_MODE: ${NOTIFY_DEV_MODE:-true}
+      NOTIFY_DEV_OUTBOX_DIR: /app/var/outbox
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
+      FIRESTORE_PROJECT_ID: ${FIRESTORE_PROJECT_ID:-}
+    volumes:
+      - hierasync-var:/app/var
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=4).read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      target: build
+    container_name: hierasync-web-dev
+    profiles: ["dev"]
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  web:
+    build: ./frontend
+    container_name: hierasync-web
+    profiles: ["prod"]
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+  # Browsable preview of every simulated email / SMS / WhatsApp message
+  outbox-preview:
+    image: python:3.12-slim
+    container_name: hierasync-outbox
+    working_dir: /srv
+    volumes:
+      - hierasync-var:/srv:ro
+    command: ["python", "-m", "http.server", "8080"]
+    ports:
+      - "8080:8080"
+
+volumes:
+  hierasync-var:

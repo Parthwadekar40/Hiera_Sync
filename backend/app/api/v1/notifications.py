@@ -207,28 +207,13 @@ def trigger_notification(
     priority: str = "Medium",
     icon: str = "🔔"
 ):
-    # Avoid exact duplicates
-    existing = list(db.collection('notifications')
-                    .where('user_id', '==', user_id)
-                    .where('title', '==', title)
-                    .where('message', '==', message)
-                    .limit(1).stream())
-    if existing:
-        return
-        
-    notif_id = f"notif_{uuid.uuid4().hex[:8]}"
-    db_notif = {
-        "id": notif_id,
-        "user_id": user_id,
-        "title": title,
-        "message": message,
-        "time": "Just now",
-        "type": notif_type,
-        "priority": priority,
-        "target_route": target_route,
-        "icon": icon,
-        "status": "New",
-        "is_read": False,
-        "created_at": datetime.utcnow().isoformat()
-    }
-    db.collection('notifications').document(notif_id).set(db_notif)
+    """Legacy entry point kept for the existing routers.
+
+    It now delegates to the multi-channel engine, so every v1 call site
+    (tasks, join requests, approvals, goals) transparently gains in-app +
+    e-mail + SMS + WhatsApp fan-out, duplicate suppression, quiet hours and
+    retry/backoff without any change to its signature.
+    """
+    from app.notify.engine import trigger_notification as _engine_trigger
+
+    return _engine_trigger(db, user_id, notif_type, title, message, target_route, priority, icon)

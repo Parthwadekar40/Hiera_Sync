@@ -1,9 +1,15 @@
+# HieraSync AI - backend runtime dependencies (no GPU, no ML framework by design)
 fastapi
 uvicorn[standard]
 firebase-admin
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt
 python-multipart
 pydantic[email]
 pydantic-settings
 APScheduler
+
+# Development / verification (docs/06): pytest for the suite, httpx for TestClient
+pytest
+httpx

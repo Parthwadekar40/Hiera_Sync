@@ -57,3 +57,12 @@ firebase-credentials.json
 
 # Environment variables
 .env
+
+# v2 local runtime artifacts (embedded store, notification outbox previews, build output)
+.venv/
+backend/.venv/
+backend/var/
+var/outbox/
+*.sqlite3
+frontend/dist/
+frontend/tsconfig.tsbuildinfo

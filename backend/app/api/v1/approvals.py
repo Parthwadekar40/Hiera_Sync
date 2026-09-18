@@ -59,7 +59,15 @@ def get_approvals(
     approvals = []
     if docs:
         for doc in docs:
-            approvals.append(doc.to_dict())
+            row = dict(doc.to_dict())
+            # v2 stores canonical uppercase states; this page expects v1 casing.
+            status = str(row.get("status") or "PENDING").upper()
+            row["status"] = {"PENDING": "Pending", "APPROVED": "Approved", "REJECTED": "Rejected", "CANCELLED": "Cancelled"}.get(status, row.get("status", "Pending"))
+            row.setdefault("requested", row.get("requester_name"))
+            row.setdefault("assigned", row.get("requester_name"))
+            row.setdefault("comments", row.get("decision_note") or row.get("hod_comment"))
+            row["stage"] = row.get("stage") or row.get("current_stage")
+            approvals.append(row)
     else:
         approvals = DEFAULT_APPROVALS
     return approvals

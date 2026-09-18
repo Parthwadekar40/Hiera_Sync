@@ -18,6 +18,10 @@ from app.api.v1.requests import router as requests_router
 from app.api.v1.comments import router as comments_router
 from app.api.v1.attachments import router as attachments_router
 from app.api.v1.goals import router as goals_router
+from app.api.v1.risk import router as risk_router
+from app.api.v1.workflow import router as workflow_router
+from app.api.v1.metrics import router as metrics_router
+from app.api.v1.channels import router as channels_router
 
 api_router = APIRouter()
 
@@ -38,4 +42,8 @@ api_router.include_router(requests_router, prefix="/task-requests", tags=["reque
 api_router.include_router(comments_router, prefix="/comments", tags=["comments"])
 api_router.include_router(attachments_router, prefix="/attachments", tags=["attachments"])
 api_router.include_router(goals_router, prefix="/goals", tags=["goals"])
+api_router.include_router(risk_router, prefix="/risk", tags=["risk-engine"])
+api_router.include_router(workflow_router, prefix="/workflow", tags=["workflow"])
+api_router.include_router(metrics_router, prefix="/metrics", tags=["metrics"])
+api_router.include_router(channels_router, prefix="/channels", tags=["channels"])
 api_router.include_router(test_router)
