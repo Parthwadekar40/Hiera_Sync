@@ -615,3 +615,34 @@ class TestUiSurfaces:
 
         bad = client.get("/api/v1/metrics/export?kind=nope&format=csv", headers=hod)
         assert bad.status_code in (400, 422)
+
+
+class TestSchedulerTriggers:
+    """A cron expression that fails to parse silently drops a job - the deck's 8 AM reminder cannot do that."""
+
+    def test_every_registered_job_trigger_constructs(self):
+        from app.scheduler.jobs import JOBS
+
+        assert len(JOBS) == 10
+        for spec in JOBS:
+            assert spec["trigger"]() is not None, f"{spec['id']} has an unbuildable trigger"
+
+    def test_multi_time_reminder_registers_both_hours(self, monkeypatch):
+        from app.scheduler import jobs as J
+
+        # offset 0 => the campus-local clock is the cron clock, so assertions stay readable
+        monkeypatch.setattr(J, "SCHED_TZ", None)
+        monkeypatch.setattr(J, "_UTC_OFFSET_MIN", 0)
+        rendered = repr(J._cron("08:00,17:00"))
+        assert "hour='8,17'" in rendered and "minute='0'" in rendered, rendered
+        assert repr(J._cron("08:00")).count("hour='8'") == 1  # a single time still works
+
+    def test_mixed_minutes_warn_instead_of_dropping_silently(self, monkeypatch, caplog):
+        import logging
+
+        from app.scheduler import jobs as J
+
+        monkeypatch.setattr(J, "SCHED_TZ", None)
+        with caplog.at_level(logging.WARNING, logger="campuspulse"):
+            J._cron("08:00,17:30")
+        assert any("share the same minute" in r.getMessage() for r in caplog.records)

@@ -54,8 +54,25 @@ def _to_utc_minutes(local_hhmm: str) -> tuple:
 
 
 def _cron(local_hhmm: str, dow: str = "*") -> CronTrigger:
-    hh, mm = _to_utc_minutes(local_hhmm)
-    kwargs: Dict[str, Any] = {"hour": hh, "minute": mm, "day_of_week": dow}
+    """CronTrigger for one or more campus-local wall-clock times ("08:00" or "08:00,17:00").
+
+    A comma list is only expressible as a single APScheduler trigger when every entry shares the
+    same minute, which is the case for the shipped reminder ladder (08:00,17:00). Mixed minutes
+    are reported instead of silently dropping the extra times - that failure mode (a job that
+    never fires) is exactly what the deck's "daily 8 AM reminder" objective cannot survive.
+    """
+    entries = [e.strip() for e in str(local_hhmm or "08:00").split(",") if e.strip()]
+    parsed = [_to_utc_minutes(e) for e in entries]
+    minutes = sorted({mm for _, mm in parsed})
+    if len(minutes) > 1:
+        logger.warning(
+            f"{local_hhmm!r}: multiple times must share the same minute to run as one trigger; "
+            f"using {entries[0]!r} and ignoring {', '.join(entries[1:])}. Set them to ':00', ':15', ... consistently."
+        )
+        parsed = parsed[:1]
+        minutes = [parsed[0][1]]
+    hours = sorted({hh for hh, _ in parsed})
+    kwargs: Dict[str, Any] = {"hour": ",".join(str(h) for h in hours), "minute": str(minutes[0]), "day_of_week": dow}
     if SCHED_TZ:
         kwargs["timezone"] = SCHED_TZ
     return CronTrigger(**kwargs)

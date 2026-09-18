@@ -63,9 +63,9 @@ Copy `backend/.env.example` → `backend/.env`. Frequently changed keys:
 | `SEED_DEMO_DATA` | `true` | demo corpus on an empty store |
 | `STATIC_DIR` | `""` (off) | set `../frontend/dist` to serve the built SPA from FastAPI on one port; `.env.example` already ships that value |
 | `SCHEDULER_ENABLED`, `OUTBOX_POLL_SECONDS`, `NOTIFY_TIMEZONE` | true, 20, Asia/Kolkata | automation master switch |
-| `DEADLINE_REMINDER_TIMES` | `08:00,17:00` | the deck's **8 AM** reminder is the first entry |
-| `WEEKLY_REPORT_TIME` | `Mon:07:00` | auto-generated report |
-| `OVERDUE_ESCALATION_TIME`, `RETENTION_PURGE_TIME` | `08:30`, `02:00` | escalation ladder, purge |
+| `DEADLINE_REMINDER_TIMES` | `08:00` | the deck's **8 AM** reminder; accepts several times if they share a minute (`08:00,17:00`) |
+| `WEEKLY_REPORT_TIME` | `Mon:07:00` | auto-generated report (day:time) |
+| `OVERDUE_ESCALATION_TIME`, `RETENTION_PURGE_TIME` | `09:00`, `02:00` | escalation ladder, purge (both campus-local) |
 | `NOTIFY_DEV_MODE`, `NOTIFY_DEV_OUTBOX_DIR` | true, `./var/outbox` | writes `email-*.html/.txt`, `sms-*.txt`, `whatsapp-*.txt` |
 | `SMTP_HOST/PORT/USERNAME/PASSWORD/FROM/USE_TLS` | – | Gmail/Outlook/SES relay (app password) |
 | `TWILIO_ACCOUNT_SID/TOKEN/FROM` | – | SMS (sandbox number works) |
@@ -75,9 +75,9 @@ Full annotated list: `backend/.env.example`. Anything set wins over `.env`, whic
 
 ### Going live, channel by channel
 
-1. **E-mail (10 min).** `NOTIFY_DEV_MODE=false`, `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USE_TLS=true`, `SMTP_USERNAME=you@gmail.com`, `SMTP_PASSWORD=<16-char app password>` (Google requires app passwords with 2FA; "less secure apps" is gone), `SMTP_FROM="HieraSync <you@gmail.com>"`. Verify: `curl -X POST localhost:8000/api/v1/channels/test -H "Authorization: Bearer <jwt>" -H 'Content-Type: application/json' -d '{"channels":["email"]}'`.
+1. **E-mail (10 min).** `NOTIFY_DEV_MODE=false`, `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_SECURITY=starttls`, `SMTP_USERNAME=you@gmail.com`, `SMTP_PASSWORD=<16-char app password>` (Google requires app passwords with 2FA; "less secure apps" is gone), `MAIL_FROM=you@gmail.com`, `MAIL_FROM_NAME="HieraSync AI"`, `MAIL_SUBJECT_PREFIX=[HieraSync]`. Port 465 hosts use `SMTP_SECURITY=ssl`. Verify: `curl -X POST localhost:8000/api/v1/channels/test -H "Authorization: Bearer <jwt>" -H 'Content-Type: application/json' -d '{"channels":["email"]}'`.
 2. **SMS.** Twilio trial: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER=+1…` (trial sandbox auto-targets the verified number). Recipients need a `phone` in E.164 — set in the profile or `PUT /api/v1/channels/preferences`.
-3. **WhatsApp.** Meta WhatsApp Cloud API: app → WhatsApp product → get `PHONE_NUMBER_ID` + permanent token; set `WHATSAPP_VERIFY_TOKEN` to any string, expose `GET/POST /api/v1/channels/whatsapp/webhook` to Meta's callback URL, and **submit the HieraSync message templates for approval**. Business-initiated messages must use an approved template, so `WHATSAPP_TEMPLATE_HIGH` / `_MEDIUM` / `_LOW` have to exist before the provider is reported live. Recipients must set `whatsapp_opt_in=true`.
+3. **WhatsApp.** Meta WhatsApp Cloud API: app → WhatsApp product → get `PHONE_NUMBER_ID` + permanent token; set and **submit the HieraSync message templates for approval**. Business-initiated messages must use an approved template, so `WHATSAPP_TEMPLATES` (a JSON map of message kind → template name, e.g. `{"deadline_risk":"risk_alert","default":"generic_alert"}`) has to reference templates Meta has approved before the provider is reported live. `WHATSAPP_PROVIDER=twilio` is the alternative if you already have a Twilio WhatsApp sandbox. Recipients must set `whatsapp_opt_in=true`.
 4. **Firestore.** `DATABASE_BACKEND=firestore` + credentials → same code, no migration script needed (`scripts/export_sqlite_to_firestore.py` is optional for an existing demo corpus).
 
 ## 5. Docker
