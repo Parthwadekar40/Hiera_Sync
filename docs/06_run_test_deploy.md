@@ -13,6 +13,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # → http://localhost:8000/health     backend: sqlite | firestore, scheduler: ok
 ```
 
+`STATIC_DIR` is read relative to the process cwd, so always start uvicorn **from `backend/`** (`.env` is read from the cwd too). With `frontend/dist` present and `STATIC_DIR=../frontend/dist`, `http://localhost:8000/` serves the React app itself; otherwise the SPA runs on `:5173` via `npm run dev`.
+
 First boot seeds a deterministic demo corpus (`SEED_DEMO_DATA=true`, 2 departments, 16 users covering **all 10 roles**, 28 tasks across every risk band, 8 approvals at different stages, events, goals, preferences) and auto-calibrates risk weights if none exist.
 
 ```bash
@@ -56,10 +58,10 @@ Copy `backend/.env.example` → `backend/.env`. Frequently changed keys:
 |---|---|---|
 | `DATABASE_BACKEND` | `auto` | `auto` → Firestore if credentials exist, else the embedded store; force `sqlite`/`firestore` |
 | `FIRESTORE_CREDENTIALS_JSON` / `_PATH`, `FIRESTORE_PROJECT_ID` | – | Admin SDK credentials (path preferred over inline JSON) |
-| `JWT_SECRET_KEY` | dev value | **change in production** |
+| `SECRET_KEY` | dev value | JWT signing key — **change in production** (legacy v1 name, still canonical) |
 | `CORS_ORIGINS` | localhost:5173/3000/4173 | comma list |
 | `SEED_DEMO_DATA` | `true` | demo corpus on an empty store |
-| `STATIC_DIR` | `../frontend/dist` | serves the built SPA from the same origin; `""` = API-only |
+| `STATIC_DIR` | `""` (off) | set `../frontend/dist` to serve the built SPA from FastAPI on one port; `.env.example` already ships that value |
 | `SCHEDULER_ENABLED`, `OUTBOX_POLL_SECONDS`, `NOTIFY_TIMEZONE` | true, 20, Asia/Kolkata | automation master switch |
 | `DEADLINE_REMINDER_TIMES` | `08:00,17:00` | the deck's **8 AM** reminder is the first entry |
 | `WEEKLY_REPORT_TIME` | `Mon:07:00` | auto-generated report |
