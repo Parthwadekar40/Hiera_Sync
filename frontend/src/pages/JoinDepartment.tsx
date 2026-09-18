@@ -168,13 +168,13 @@ export default function JoinDepartment() {
             </div>
 
             <p className="jd-status-desc">
-              Department: <strong>{department?.name || status?.department_name || "Machinelearning"}</strong>
+              Department: <strong>{department?.name || status?.department_name || "Computer Science & Engineering (AI & ML)"}</strong>
               <br />
               Institution: <strong>SBJIT Nagpur</strong>
             </p>
 
             <div className="jd-meta-details">
-              <span>Department Code: <strong>{department?.code || status?.department_code || "8FTEOOCV"}</strong></span>
+              <span>Department Code: <strong>{department?.code || status?.department_code || "AIML"}</strong></span>
               <span>•</span>
               <span>Access Level: <strong>Faculty Workspace</strong></span>
             </div>
@@ -286,7 +286,7 @@ export default function JoinDepartment() {
         <h1 className="jd-title">Join Department</h1>
 
         <p className="jd-subtitle">
-          Enter the unique department invitation code provided by your Head of Department or Administrator.
+          Enter the unique department invitation code provided by your Head of Department or Administrator. (Seeded demo codes: <span className="font-semibold">AIML</span> and <span className="font-semibold">IT</span> — codes for departments you create are generated as 8 random A–Z/0–9 characters.)
         </p>
 
         {status?.status === "Rejected" && (
