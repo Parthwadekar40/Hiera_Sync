@@ -12,7 +12,7 @@
 
 | Deck takeaway | Where it is true in code | How to see it in 30 seconds |
 |---|---|---|
-| **Unified Role-Aware System** — a functional full-stack web platform covering departmental workflows end-to-end | 22 FastAPI routers + 16 React pages over one document store; 10 roles | open the SPA, log in as HOD then as Faculty and compare the menus and the data returned |
+| **Unified Role-Aware System** — a functional full-stack web platform covering departmental workflows end-to-end | 22 FastAPI routers + 18 React pages over one document store; 10 roles | open the SPA, log in as HOD then as Faculty and compare the menus and the data returned |
 | **Digitized Approvals & Follow-ups** — multi-stage HOD → Principal routing with automatic reminders prevents stalled tasks | `app/engine/approvals.py` (stages, SLA, delegation, resubmit, hash-chained audit) + `app/scheduler/jobs.py` (10 jobs) | *Automation Center → Run* on `daily_reminders`, then *Approvals → decide*; or `POST /api/v1/workflow/verify` |
 | **Zero-Cost AI Foresight** — heuristic risk scoring gives proactive delay alerts without per-seat AI subscription costs | `app/engine/risk.py` (8 factors, logit fusion, explanation) — pure Python, no model files, no API key | *Risk Center → Explain* on any HIGH row; `GET /api/v1/risk/score/{id}` |
 | **Runnable from Repository** — *"All 5 core objectives are implemented and runnable directly from the repository today"* | `docs/06 §1` (no cloud account needed; `DATABASE_BACKEND=auto` degrades to the embedded store) | `uvicorn app.main:app` → `python scripts/e2e_demo.py` → **13/13 checks pass** |

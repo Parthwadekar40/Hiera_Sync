@@ -19,6 +19,10 @@ First boot seeds a deterministic demo corpus (`SEED_DEMO_DATA=true`, 2 departmen
 cd frontend && npm install && npm run dev     # http://localhost:5173 (proxies /api -> :8000)
 ```
 
+Served by the same origin (the SPA is picked up from `STATIC_DIR`): `/dashboard`, `/tasks`, `/calendar`,
+`/approvals`, **`/approvals/desk`** (staged workflow), **`/risk`** (risk engine), **`/analytics`** (scorecard + exports),
+**`/automation`** (channels, jobs, outbox), `/ai`, `/goals`, `/notifications`, `/reports`, `/employees`, `/settings`.
+
 ## 2. Demo logins (password `HierSync@123`, override with `DEMO_PASSWORD`)
 
 | Role | E-mail | Try this |

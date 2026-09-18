@@ -172,6 +172,18 @@ v2 closes exactly those three (live SMTP/SMS/WhatsApp senders + policy routing, 
 benchmark, the metrics router + exports), which is why every row above now reads *Done* or *Upgraded*. The
 before/after module-by-module diff is in `docs/07 §2`.
 
+### v2 UI surfaces (new routes in the SPA)
+
+| Route | Page | Deck item it makes visible |
+|---|---|---|
+| `/risk` | Risk Center | Slide 18 — scored board, per-factor evidence, what-if simulator, weight governance + live benchmark |
+| `/approvals/desk` | Approval Desk | Slide 15 — stage timeline, SLA meter, mandatory rejection note, delegation, resubmission, audit chain + "verify" |
+| `/analytics` | Analytics | Slide 19 — scorecard with the formulas disclosed, faculty index, department rollup, forecast, band trend, CSV/JSON export |
+| `/automation` | Automation Center | Slide 19 + future scope — provider live/dev badges, queue + dead-letter, consent & routing, 10 jobs with Run-now, delivery ledger, SSE feed |
+
+The v1 pages (`/approvals`, `/reports`, `/notifications`) are preserved unchanged so earlier screenshots in the report still
+match; the new pages are additive and role-gated by the same capabilities the API enforces.
+
 ## 8. Sequence — "8 AM reminder" (the deck's flagship automation)
 
 ```mermaid

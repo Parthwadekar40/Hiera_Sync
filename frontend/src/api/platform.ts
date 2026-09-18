@@ -129,6 +129,11 @@ export interface ApprovalDoc {
   action_hint?: string;
   audit_integrity?: { valid: boolean; problems: string[] };
   created_task_id?: string;
+  related_task_id?: string | null;
+  resubmissions?: number;
+  delegated_to?: string | null;
+  delegated_from?: string | null;
+  escalation_count?: number;
 }
 
 /** Queue rows are lean: SLA state is nested and the action hint is `action_reason`. */
@@ -144,21 +149,45 @@ export interface QueueItem {
   sla?: { state: 'on_track' | 'due_soon' | 'breached' | 'escalated'; hours_waiting: number; sla_hours: number; hours_remaining: number; percent_consumed: number; breached: boolean };
 }
 
+/** POST /workflow/ - step 1 of the deck's workflow (Slide 15). */
+export interface NewRequestPayload {
+  title: string;
+  kind?: 'leave' | 'no_objection' | 'event' | 'purchase' | 'budget' | 'outcome_approval' | 'deadline_change' | 'joining' | 'generic';
+  description?: string;
+  amount?: number | null;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+  evidence?: Record<string, unknown>;
+  attachment_ids?: string[];
+  department_id?: string | null;
+  expected_completion?: string | null;
+  goal_id?: string | null;
+}
+
+export type DecisionResult = {
+  id: string;
+  status: ApprovalDoc['status'];
+  stage: string;
+  stages: string[];
+  next_actor?: string | null;
+  created_task?: { id: string; title: string; deadline?: string } | false;
+  related_task_id?: string | null;
+  audit?: NonNullable<ApprovalDoc['audit']>;
+};
+
+
+
 export const workflowApi = {
+  raise: (body: NewRequestPayload) => client<ApprovalDoc & { id: string }>('/workflow/', { method: 'POST', data: body }),
   queue: () => client<{ role: string; counts: { total: number; breached: number; due_soon: number }; items: QueueItem[] }>('/workflow/queue'),
   list: (scope: 'incoming' | 'mine' | 'all' = 'incoming') => client<ApprovalDoc[]>(`/workflow/?scope=${scope}`),
   get: (id: string) => client<ApprovalDoc>(`/workflow/${id}`),
-  raise: (body: Record<string, unknown>) => client<ApprovalDoc>('/workflow/', { method: 'POST', data: body }),
   decide: (id: string, decision: 'APPROVE' | 'REJECT', note = '') =>
-    client<{ ok: boolean; status: string; stage: string; next_actor?: string; created_task: boolean; created_task_id?: string; doc: ApprovalDoc }>(
-      `/workflow/${id}/decide`,
-      { method: 'POST', data: { decision, note } },
-    ),
+    client<DecisionResult>(`/workflow/${id}/decide`, { method: 'POST', data: { decision, note } }),
   resubmit: (id: string, note: string, evidence?: Record<string, unknown>) =>
     client<ApprovalDoc>(`/workflow/${id}/resubmit`, { method: 'POST', data: { note, evidence } }),
-  cancel: (id: string, note = '') => client<{ ok: boolean }>(`/workflow/${id}/cancel`, { method: 'POST', data: { note } }),
-  delegate: (id: string, toUserId: string, note = '') =>
-    client<ApprovalDoc>(`/workflow/${id}/delegate`, { method: 'POST', data: { to_user_id: toUserId, note } }),
+  cancel: (id: string, note = '') => client<ApprovalDoc>(`/workflow/${id}/cancel`, { method: 'POST', data: { note } }),
+  delegate: (id: string, to: string, note = '') =>
+    client<ApprovalDoc>(`/workflow/${id}/delegate`, { method: 'POST', data: { to, note } }),
   audit: (id: string) => client<{ approval_id: string; entries: ApprovalDoc['audit']; valid: boolean }>(`/workflow/${id}/audit`),
   verify: () => client<{ ok: boolean; checked?: number; problems?: string[] }>('/workflow/verify', { method: 'POST', data: {} }),
   policies: () =>
@@ -167,7 +196,16 @@ export const workflowApi = {
       policies: Array<{ kind: string; stages: string[]; sla_hours: number; requires_note_on_reject?: boolean; required_evidence?: string[]; principal_above?: number }>;
     }>('/workflow/policies'),
   rbac: () => client<{ roles: string[]; capabilities: string[]; matrix: Record<string, string[]>; analytics_scope: Record<string, string> }>('/workflow/rbac'),
-  funnel: () => client<Record<string, number | string>>('/workflow/stats/funnel'),
+  funnel: () =>
+    client<{
+      buckets: Record<string, number>;
+      pending_breaching_sla: number;
+      escalation_events: number;
+      median_hours_to_decision: number | null;
+      median_hours_to_first_response: number | null;
+      by_kind: Record<string, number>;
+      baseline_note?: string;
+    }>('/workflow/stats/funnel'),
 };
 
 /* --------------------------------------------------------------- metrics */
@@ -189,20 +227,57 @@ export interface Scorecard {
 
 export const metricsApi = {
   scorecard: (days = 30) => client<Scorecard>(`/metrics/scorecard?days=${days}`),
-  faculty: () =>
+  faculty: (days = 90) =>
     client<{
       count: number;
       weights: Record<string, number>;
       note: string;
-      items: Array<{ user_id: string; name: string; role: string; open: number; completed: number; overdue: number; on_time_rate: number; performance_index: number; workload: number }>;
-    }>('/metrics/faculty'),
-  departments: () => client<Array<Record<string, unknown>>>('/metrics/departments'),
-  forecast: (weeks = 4) => client<{ points: Array<{ week: string | number; count: number }> }>(`/metrics/forecast?weeks=${weeks}`),
-  riskTrend: (days = 30) => client<{ points: Array<{ taken_at: string; HIGH: number; MEDIUM: number; LOW: number; mean_risk: number }> }>(`/metrics/risk-trend?days=${days}`),
-  exportUrl: (dataset: string, format: 'csv' | 'json' = 'csv') =>
-    `${API_ROOT}/metrics/export?dataset=${dataset}&format=${format}`,
+      items: Array<{ user_id: string; name: string; role: string; designation?: string; active: number; completed: number; overdue: number; on_time_rate: number; avg_progress: number; performance_index: number; workload: number; responsiveness?: number }>;
+    }>(`/metrics/faculty?days=${days}`),
+  departments: (days = 90) =>
+    client<{
+      items: Array<{
+        department_id: string;
+        department: string;
+        code?: string;
+        active_tasks: number;
+        completion_rate: number;
+        on_time_rate: number;
+        overdue_rate: number;
+        high_risk_tasks: number;
+        projected_misses: number;
+        approvals_pending: number;
+        approvals_breached: number;
+        workload_balance_index: number;
+        health_index: number;
+      }>;
+    }>(`/metrics/departments?days=${days}`),
+  forecast: (weeks = 4) => client<{ points: Array<{ week: string; count: number }> }>(`/metrics/forecast?weeks=${weeks}`),
+  riskTrend: (days = 30) =>
+    client<{ count: number; items: Array<{ taken_at: string; bands?: Record<string, number>; LOW?: number; MEDIUM?: number; HIGH?: number; mean_risk?: number; open_tasks?: number }> }>(
+      `/metrics/risk-trend?days=${days}`,
+    ),
   snapshot: () => client<Record<string, unknown>>('/metrics/snapshot', { method: 'POST', data: {} }),
-  exportDatasets: ['tasks', 'faculty', 'approvals', 'audit', 'departments'] as const,
+  /** GET /api/v1/metrics/export - kind is one of the six accreditation datasets. */
+  exportUrl: (kind: string, format: 'csv' | 'json' = 'csv', days = 90) =>
+    `${API_ROOT}/metrics/export?kind=${kind}&format=${format}&days=${days}`,
+  datasets: ['scorecard', 'faculty', 'tasks', 'approvals', 'departments', 'audit'] as const,
+  /** The export needs the Authorization header, so stream it and hand the browser a blob. */
+  download: async (kind: string, format: 'csv' | 'json' = 'csv', days = 90) => {
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token') || '';
+    const res = await fetch(metricsApi.exportUrl(kind, format, days), { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hierasync-${kind}-${new Date().toISOString().slice(0, 10)}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return a.download;
+  },
 };
 
 /* -------------------------------------------------------- notification ops */

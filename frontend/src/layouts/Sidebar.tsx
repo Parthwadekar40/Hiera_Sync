@@ -81,6 +81,20 @@ export default function Sidebar() {
         roles: ["ADMIN", "HOD", "FACULTY"]
       },
       {
+        name: "Approval Desk",
+        path: "/approvals/desk",
+        icon: <FaClipboardCheck className="w-4 h-4" />,
+        badge: "2-stage",
+        roles: ["ADMIN", "HOD", "FACULTY"]
+      },
+      {
+        name: "Analytics",
+        path: "/analytics",
+        icon: <FaChartBar className="w-4 h-4" />,
+        badge: null,
+        roles: ["ADMIN", "HOD"]
+      },
+      {
         name: "Automation",
         path: "/automation",
         icon: <FaCog className="w-4 h-4" />,

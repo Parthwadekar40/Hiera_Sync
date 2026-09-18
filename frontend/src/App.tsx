@@ -87,6 +87,14 @@ const AutomationCenter = lazy(
   () => import("./pages/AutomationCenter")
 );
 
+const ApprovalDesk = lazy(
+  () => import("./pages/ApprovalDesk")
+);
+
+const Analytics = lazy(
+  () => import("./pages/Analytics")
+);
+
 
 
 /* =====================================================
@@ -325,6 +333,16 @@ function App() {
                   <Route
                     path="/automation"
                     element={<AutomationCenter />}
+                  />
+
+                  <Route
+                    path="/approvals/desk"
+                    element={<ApprovalDesk />}
+                  />
+
+                  <Route
+                    path="/analytics"
+                    element={<Analytics />}
                   />
 
                   <Route
