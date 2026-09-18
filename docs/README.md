@@ -4,8 +4,11 @@ Project report material for *"HieraSync AI — Smart Academic Workflow & Event M
 S. B. Jain Institute of Technology, Management & Research, Nagpur — AY 2026‑27, Group 11
 (Atul Gupta CM23019 · Tanvi Beer CM23020 · Tanish Kesharwani CM23020 · Parth Wadekar CM23040), guide **Mrs. Neha Gurnani**.
 
-Source of truth for scope and wording: **`/HieraSync_AI_30_Slide_Master_Presentation_v2.pdf`** (repository root).
-Every section below cites the slide(s) it implements; `07 §5` is the full slide→artifact matrix.
+Source of truth for scope and wording: **`HieraSync_AI_30_Slide_Master_Presentation_v2.pdf`** (repository root) — 23 pages,
+titled "30 Slide Master" because several pages carry more than one slide. Every document below cites the page(s) it
+implements; [`08 §2`](08_conclusion_and_bibliography.md#2-the-decks-own-roadmap--this-document-set) maps the deck's own
+10-section roadmap onto this set, and `07 §5` is the full slide→artifact matrix.
+Re-extract the deck text at any time with `backend/.venv/bin/python - <<'PY' … pypdf … PY` (see `docs/06`).
 
 | Doc | Covers (deck) | Report chapter it feeds |
 |---|---|---|
@@ -16,7 +19,8 @@ Every section below cites the slide(s) it implements; `07 §5` is the full slide
 | [`05_engineering_justifications.md`](05_engineering_justifications.md) | Slide 16 + Slides 18–19 — stack justifications, risk-engine math, delivery policy, security, reliability, **limitations** | Ch. 3.5 Justifications / Ch. 6.1 |
 | [`05_RBAC_MATRIX.md`](05_RBAC_MATRIX.md) | Slide 13 — the authoritative 10 × 16 capability matrix (generated from `rbac.py`) | Appendix; quoted by 403 responses |
 | [`06_run_test_deploy.md`](06_run_test_deploy.md) | Slide 22 (code & testing) — quickstart, demo logins, verification suite, env reference, SMTP/Twilio/WhatsApp setup, Docker, troubleshooting | Ch. 5 Testing / Appendix A |
-| [`07_advantages_roi_traceability.md`](07_advantages_roi_traceability.md) | Slides 20–21 + 23–30 — advantages, quantified ROI, applications, roadmap alignment, traceability, deliberate deltas, references | Ch. 6 Results & Discussion / Ch. 7 Conclusion |
+| [`07_advantages_roi_traceability.md`](07_advantages_roi_traceability.md) | Slides 20–21 — advantages, quantified ROI, applications, roadmap alignment, traceability, deliberate deltas | Ch. 6 Results & Discussion |
+| [`08_conclusion_and_bibliography.md`](08_conclusion_and_bibliography.md) | Slides 22–23 — conclusion, objectives closure, complete bibliography with the deck's roadmap mapping, **Q&A appendix** for the viva | Ch. 7 Conclusion / References |
 | [`benchmark_results.json`](benchmark_results.json) | — | committed output of `python -m app.engine.benchmarks --tasks 500` |
 
 ## How to read this set in 10 minutes

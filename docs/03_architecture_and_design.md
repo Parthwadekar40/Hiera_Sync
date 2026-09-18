@@ -166,6 +166,12 @@ Deck step 4 is literal code: `workflow.decide()` → `_instantiate_task()` write
 * **Analytics**: departmental completion stats, faculty workload & performance table, on-time completion rate, one-click exportable summaries (CSV/JSON).
 * **Notifications**: in-app centre with unread badge, real-time alerts for approvals and tasks (SSE), APScheduler 8 AM cron, and — *beyond the deck's "prepared email gateway hooks"* — live SMTP, Twilio SMS and Meta WhatsApp Cloud API senders with per-user consent and routing policy.
 
+**Reading the page 17 status column as the v1 snapshot.** The deck reports M1 100 %, M2 95 %, M3 95 %, M4 90 %, M5 90 %,
+M6 85 % ◐, M7 80 % ◐, M8 85 % ◐, M9 90 % — i.e. notifications, AI and analytics were the three half-finished modules.
+v2 closes exactly those three (live SMTP/SMS/WhatsApp senders + policy routing, the 8-factor engine + calibration +
+benchmark, the metrics router + exports), which is why every row above now reads *Done* or *Upgraded*. The
+before/after module-by-module diff is in `docs/07 §2`.
+
 ## 8. Sequence — "8 AM reminder" (the deck's flagship automation)
 
 ```mermaid

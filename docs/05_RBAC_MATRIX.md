@@ -1,7 +1,7 @@
 # RBAC Capability Matrix — authoritative reference
 
 Generated from `backend/app/auth/rbac.py` (`MATRIX`, `CAPABILITIES`, `ANALYTICS_SCOPE`) — the code the `403`
-payloads quote. Deck reference: **Slide 13, "Use Case Diagram & Granular RBAC Matrix"**.
+payloads quote. Deck reference: **Slide 13, "Use Case Diagram & Granular RBAC Permissions"**.
 
 * `GET /api/v1/workflow/rbac` returns this matrix at runtime, so the SPA, this file and the API cannot disagree.
 * 10 roles × 16 capabilities. ✅ = granted, · = denied.

@@ -53,7 +53,7 @@ One number the deck can quote in the viva: for a 40-department institute of ~400
 | Zero-cost heuristic AI risk engine | **Delivered now**, extended from 4 rules to 8 explainable factors + what-if + benchmark |
 | Multi-tenant college SaaS | Not delivered; `department_id` on every collection is the groundwork |
 
-## 5. Traceability matrix — deck slide → artifact
+## 5. Traceability matrix — deck page → artifact
 
 | Slide | Deck content | Repository artifact | Test / demo |
 |---|---|---|---|
@@ -78,8 +78,11 @@ One number the deck can quote in the viva: for a 40-department institute of ~400
 | 19 | Approvals, analytics, notifications | `docs/03 §7` + `docs/06 §4` | scorecard + outbox files |
 | 20 | Advantages & ROI | `docs/07 §1–2` | benchmark table |
 | 21 | Applications & future scope | `docs/07 §3–4` | — |
-| 22–24 | Deliverables, results, validation | `docs/07 §5`, `docs/benchmark_results.json` | e2e transcript |
-| 25–30 | Report sections (abstract → references) | `docs/` set, `docs/presentation/30_slide_deck.md` | — |
+| 22 | References & Academic Bibliography (10 entries) | `docs/08 §3` (complete list, URLs + DOI, plus how each is used) | — |
+| 23 | Conclusion & Key Takeaways / Q&A Appendix | `docs/08 §1` (verbatim takeaways → proving artifact) and `docs/08 §4` | `e2e_demo.py` exit 0 |
+
+*The committed PDF is 23 pages (filename says 30); pages 2–3, 9–16, 17–19 and 20–21 each carry the deck's grouped
+roadmap sections, which is why `docs/08 §2` maps by content rather than by raw page index.*
 | 21 (future) | WhatsApp/SMS gateway, ML on history | `app/notify/providers.py`, `app/engine/calibrate.py` | `/channels/status`, `/risk/calibrate` |
 
 **References carried from the deck:** IJCRT1812344 (Salunke et al., Django RBAC); IJARSCT Paper25814 (Tripathi et al.); ResearchGate 394249334 (AI agents in higher ed) & 399184231 (automating HE admin); IEEE 10743425; IJERT 15(04) 2026; Frontiers in Education 2025 (Khairullah; Buele); Dupple 2026 AI-PM comparison; repository `github.com/Parthwadekar40/Hiera_Sync`.
