@@ -74,11 +74,25 @@ export default function Sidebar() {
         roles: ["ADMIN", "HOD", "FACULTY"]
       },
       {
+        name: "Risk Center",
+        path: "/risk",
+        icon: <FaChartBar className="w-4 h-4" />,
+        badge: "AI",
+        roles: ["ADMIN", "HOD", "FACULTY"]
+      },
+      {
+        name: "Automation",
+        path: "/automation",
+        icon: <FaCog className="w-4 h-4" />,
+        badge: null,
+        roles: ["ADMIN", "HOD", "FACULTY"]
+      },
+      {
         name: "Calendar",
         path: "/calendar",
         icon: <FaCalendarAlt className="w-4 h-4" />,
         badge: null,
-        roles: ["ADMIN", "HOD", "FACULTY"]
+        roles: ["ADMIN", "HOD", "FACULTY", "STUDENT", "STUDENT_REP"]
       },
       {
         name: "Approvals",
@@ -103,7 +117,16 @@ export default function Sidebar() {
       }
     ];
 
-    menu = allMenu.filter(item => item.roles.includes(user.role));
+    // Slide 13 lists 10 roles; the v1 menu literals only name three of them.
+    // Expand each listed role to its institutional class so every role lands in the right subset.
+    const ROLE_CLASS: Record<string, string[]> = {
+      ADMIN: ["ADMIN", "PRINCIPAL", "HOD"],
+      HOD: ["PRINCIPAL", "HOD"],
+      FACULTY: ["FACULTY", "TEACHER", "TA", "LAB_ASSISTANT", "STAFF"],
+      STUDENT: ["STUDENT", "STUDENT_REP"],
+    };
+    const audience = (listed: string[]) => new Set(listed.flatMap((r) => ROLE_CLASS[r] ?? [r]));
+    menu = allMenu.filter((item: any) => audience(item.roles).has(user.role as string));
   } else {
     // Pending users can only see Join/Create Dept
     if (user?.role === "ADMIN" || user?.role === "HOD") {

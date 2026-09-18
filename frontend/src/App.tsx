@@ -79,6 +79,14 @@ const AIAssistantPage = lazy(
   () => import("./pages/AIAssistantPage")
 );
 
+const RiskCenter = lazy(
+  () => import("./pages/RiskCenter")
+);
+
+const AutomationCenter = lazy(
+  () => import("./pages/AutomationCenter")
+);
+
 
 
 /* =====================================================
@@ -307,6 +315,16 @@ function App() {
                   <Route
                     path="/notifications"
                     element={<Notifications />}
+                  />
+
+                  <Route
+                    path="/risk"
+                    element={<RiskCenter />}
+                  />
+
+                  <Route
+                    path="/automation"
+                    element={<AutomationCenter />}
                   />
 
                   <Route

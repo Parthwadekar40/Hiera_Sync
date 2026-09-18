@@ -1,4 +1,15 @@
-export type RoleEnum = 'FACULTY' | 'ADMIN' | 'HOD';
+/** Backend `RoleEnum` — 10 institutional roles (Slide 13). Aliases are normalised server-side. */
+export type RoleEnum =
+  | 'ADMIN'
+  | 'PRINCIPAL'
+  | 'HOD'
+  | 'FACULTY'
+  | 'TEACHER'
+  | 'TA'
+  | 'LAB_ASSISTANT'
+  | 'STAFF'
+  | 'STUDENT'
+  | 'STUDENT_REP';
 
 export interface UserBase {
   name: string;
