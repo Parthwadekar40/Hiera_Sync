@@ -62,7 +62,7 @@ Copy `backend/.env.example` → `backend/.env`. Frequently changed keys:
 | `CORS_ORIGINS` | localhost:5173/3000/4173 | comma list |
 | `SEED_DEMO_DATA` | `true` | demo corpus on an empty store |
 | `STATIC_DIR` | `""` (off) | set `../frontend/dist` to serve the built SPA from FastAPI on one port; `.env.example` already ships that value |
-| `SCHEDULER_ENABLED`, `OUTBOX_POLL_SECONDS`, `NOTIFY_TIMEZONE` | true, 20, Asia/Kolkata | automation master switch |
+| `SCHEDULER_ENABLED`, `NOTIFY_TIMEZONE` | true, Asia/Kolkata | automation master switch + the clock "8 AM" is measured against |
 | `DEADLINE_REMINDER_TIMES` | `08:00` | the deck's **8 AM** reminder; accepts several times if they share a minute (`08:00,17:00`) |
 | `WEEKLY_REPORT_TIME` | `Mon:07:00` | auto-generated report (day:time) |
 | `OVERDUE_ESCALATION_TIME`, `RETENTION_PURGE_TIME` | `09:00`, `02:00` | escalation ladder, purge (both campus-local) |
